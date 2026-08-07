@@ -32,6 +32,33 @@ import {
   type CardInstance,
 } from './optimizer';
 
+// Helper: check if a card is Onyx (name contains ":")
+function isOnyx(cardName: string): boolean {
+  return cardName.includes(':');
+}
+
+// Helper: expand a library/deck item into CardInstances with onyx + level
+function expandItemWithMeta(item: {
+  cardId: number;
+  quantity: number;
+  fused1: boolean;
+  fused2: boolean;
+  fused3: boolean;
+  level: number;
+  card?: { name?: string };
+}): CardInstance[] {
+  const cardName = item.card?.name ?? '';
+  return expandItem({
+    cardId: item.cardId,
+    quantity: item.quantity,
+    fused1: item.fused1,
+    fused2: item.fused2,
+    fused3: item.fused3,
+    level: item.level,
+    onyx: isOnyx(cardName),
+  });
+}
+
 // ===== Auth =====
 export function getStoredUserId(): string | null {
   return store.getStoredUserId();
@@ -297,49 +324,60 @@ export async function clearActiveDeck() {
 }
 
 // ===== Optimizer =====
+// The scoring formula (verified 671/671 against the Excel):
+//   fused_scalar = (aOnyx?1:0) + (bOnyx?1:0) + 1  → selects overcharge level
+//   score = BA[fused_scalar-1] × mode_attack + BD[fused_scalar-1] × mode_defence
+//         + (level_avg + rarity_adj) × rarity_value × mode_bonus
+
+// Mode multipliers (same as optimizer.ts)
+const M_ATTACK: Record<OptimizeMode, number> = { sum: 1, attack: 1, defence: 0, heroics: 1.5 };
+const M_DEFENCE: Record<OptimizeMode, number> = { sum: 1, attack: 0, defence: 1, heroics: 0.5 };
+const M_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1, heroics: 2 };
+
+function excelRound(x: number): number { return Math.floor(x + 0.5); }
+
+function pairScore(
+  combo: Combination, aOnyx: boolean, bOnyx: boolean, aLevel: number, bLevel: number, mode: OptimizeMode
+): number {
+  const fs = (aOnyx ? 1 : 0) + (bOnyx ? 1 : 0) + 1;
+  const ba = [combo.ba0, combo.ba1, combo.ba2][fs - 1];
+  const bd = [combo.bd0, combo.bd1, combo.bd2][fs - 1];
+  const either = aOnyx || bOnyx;
+  const lvAvg = excelRound((aLevel + bLevel) / 2);
+  const rAdj = either ? 0 : combo.resultRarity <= 2 ? -1 : 0;
+  const rVal = either ? 4 : combo.comboRarity;
+  return ba * M_ATTACK[mode] + bd * M_DEFENCE[mode] + (lvAvg + rAdj) * rVal * M_BONUS[mode];
+}
+
 export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult> {
   await store.getCards();
   await store.getCombos();
   const uid = requireUserId();
   const { deck } = store.getActiveDeckSync(uid);
   if (!deck || deck.items.length === 0) {
-    return {
-      mode, score: 0, deckSize: 0,
-      breakdown: { comboCount: 0, fusedCount: 0, rarityCounts: {} },
-      pairs: [], suggestions: [],
-    };
+    return { mode, score: 0, deckSize: 0, breakdown: { comboCount: 0, fusedCount: 0, rarityCounts: {} }, pairs: [], suggestions: [] };
   }
 
-  const instances = deck.items.flatMap((it) => expandItem(it));
+  const instances = deck.items.flatMap((it) => expandItemWithMeta(it));
   const comboMap = store.getComboMap();
   let score = 0;
   const resultCount = new Map<string, number>();
-  const pairs: Array<{
-    a: string; b: string; result: string; resultRarity: number;
-    ba: number; bd: number; contribution: number;
-  }> = [];
+  const pairs: Array<{ a: string; b: string; result: string; resultRarity: number; ba: number; bd: number; contribution: number }> = [];
   let fusedCount = 0;
-  for (const it of deck.items) {
-    if (it.fused1 || it.fused2 || it.fused3) fusedCount++;
-  }
+  for (const it of deck.items) { if (it.fused1 || it.fused2 || it.fused3) fusedCount++; }
   const cardName = new Map(deck.items.map((it) => [it.cardId, it.card.name]));
-  const contributions: Array<{
-    aId: number; bId: number; result: string; resultRarity: number;
-    ba: number; bd: number; raw: number;
-  }> = [];
+  const contributions: Array<{ aId: number; bId: number; result: string; resultRarity: number; ba: number; bd: number; raw: number }> = [];
+
   for (let i = 0; i < instances.length; i++) {
     for (let j = i + 1; j < instances.length; j++) {
-      const a = instances[i];
-      const b = instances[j];
+      const a = instances[i], b = instances[j];
       const [lo, hi] = a.cardId < b.cardId ? [a.cardId, b.cardId] : [b.cardId, a.cardId];
       const combo = comboMap.get(`${lo}_${hi}`);
       if (!combo) continue;
-      const fusionBuff = a.fused || b.fused ? 1.5 : 1.0;
-      let ba = combo.ba0;
-      let bd = combo.bd0;
-      if (mode === 'attack' || mode === 'heroics') { ba = Math.round(ba * 1.5); bd = Math.round(bd * 0.5); }
-      else if (mode === 'defence') { ba = Math.round(ba * 0.5); bd = Math.round(bd * 1.5); }
-      const raw = Math.round((ba + bd) * fusionBuff);
+      const raw = pairScore(combo, a.onyx, b.onyx, a.level, b.level, mode);
+      const fs = (a.onyx ? 1 : 0) + (b.onyx ? 1 : 0) + 1;
+      const ba = [combo.ba0, combo.ba1, combo.ba2][fs - 1];
+      const bd = [combo.bd0, combo.bd1, combo.bd2][fs - 1];
       contributions.push({ aId: a.cardId, bId: b.cardId, result: combo.resultName, resultRarity: combo.resultRarity, ba, bd, raw });
       resultCount.set(combo.resultName, (resultCount.get(combo.resultName) ?? 0) + 1);
     }
@@ -356,9 +394,7 @@ export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult>
   pairs.sort((a, b) => b.contribution - a.contribution);
 
   const rarityCounts: Record<string, number> = {};
-  for (const it of deck.items) {
-    rarityCounts[it.card.rarity] = (rarityCounts[it.card.rarity] ?? 0) + it.quantity;
-  }
+  for (const it of deck.items) { rarityCounts[it.card.rarity] = (rarityCounts[it.card.rarity] ?? 0) + it.quantity; }
 
   // Suggestions
   const deckCardIds = new Set(deck.items.map((it) => it.cardId));
@@ -366,19 +402,14 @@ export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult>
   const suggestions: Array<{ cardId: number; name: string; rarity: string; level: number; fused: boolean; gain: number }> = [];
   for (const lib of library) {
     if (deckCardIds.has(lib.cardId)) continue;
-    const libInstances = expandItem(lib);
+    const libInstances = expandItemWithMeta(lib);
     let gain = 0;
     for (const libInst of libInstances) {
       for (const d of instances) {
         const [lo, hi] = libInst.cardId < d.cardId ? [libInst.cardId, d.cardId] : [d.cardId, libInst.cardId];
         const combo = comboMap.get(`${lo}_${hi}`);
         if (!combo) continue;
-        const fusionBuff = libInst.fused || d.fused ? 1.5 : 1.0;
-        let ba = combo.ba0;
-        let bd = combo.bd0;
-        if (mode === 'attack' || mode === 'heroics') { ba = Math.round(ba * 1.5); bd = Math.round(bd * 0.5); }
-        else if (mode === 'defence') { ba = Math.round(ba * 0.5); bd = Math.round(bd * 1.5); }
-        gain += Math.round((ba + bd) * fusionBuff);
+        gain += pairScore(combo, libInst.onyx, d.onyx, libInst.level, d.level, mode);
       }
     }
     if (gain > 0) {
@@ -387,12 +418,7 @@ export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult>
   }
   suggestions.sort((a, b) => b.gain - a.gain);
 
-  return {
-    mode, score, deckSize: instances.length,
-    breakdown: { comboCount: contributions.length, fusedCount, rarityCounts },
-    pairs: pairs.slice(0, 50),
-    suggestions: suggestions.slice(0, 30),
-  };
+  return { mode, score, deckSize: instances.length, breakdown: { comboCount: contributions.length, fusedCount, rarityCounts }, pairs: pairs.slice(0, 50), suggestions: suggestions.slice(0, 30) };
 }
 
 export async function autoFill(input: {
@@ -409,19 +435,20 @@ export async function autoFill(input: {
   const library = store.getLibrarySync(uid);
   if (library.length === 0) throw new Error('Your library is empty');
 
+  // Build candidates from library — preserve level, fused, and onyx status
   const candidates: Candidate[] = [];
   for (const lib of library) {
-    const insts = expandItem(lib);
+    const insts = expandItemWithMeta(lib);
     for (const inst of insts) {
-      candidates.push({ cardId: inst.cardId, fused: inst.fused, level: lib.level });
+      candidates.push({ cardId: inst.cardId, fused: inst.fused, level: inst.level, onyx: inst.onyx });
     }
   }
 
-  const start: CardInstance[] = input.keepCurrent ? deck.items.flatMap((it) => expandItem(it)) : [];
+  const start: CardInstance[] = input.keepCurrent ? deck.items.flatMap((it) => expandItemWithMeta(it)) : [];
   let pool = [...candidates];
   if (input.keepCurrent) {
     for (const kept of start) {
-      const idx = pool.findIndex((c) => c.cardId === kept.cardId && c.fused === kept.fused);
+      const idx = pool.findIndex((c) => c.cardId === kept.cardId && c.fused === kept.fused && c.level === kept.level && c.onyx === kept.onyx);
       if (idx >= 0) pool.splice(idx, 1);
     }
   }
@@ -435,7 +462,7 @@ export async function autoFill(input: {
   const collapsed = collapseInstances(result.instances);
   collapsed.sort((a, b) => a.cardId - b.cardId);
 
-  // Replace deck items
+  // Replace deck items — preserve level and onyx from the collapsed instances
   const allItems = store.getAllDeckItemsSync(uid).filter((i) => i.deckId !== deck.id);
   collapsed.forEach((c, i) => {
     allItems.push({
@@ -443,7 +470,7 @@ export async function autoFill(input: {
       deckId: deck.id,
       cardId: c.cardId,
       card: store.getCardById(c.cardId)!,
-      level: 5,
+      level: c.level,
       quantity: c.quantity,
       fused1: c.fused1,
       fused2: c.fused2,
@@ -453,7 +480,6 @@ export async function autoFill(input: {
       updatedAt: new Date().toISOString(),
     });
   });
-  // Save
   const stripped = allItems.map(({ card, ...rest }) => rest);
   localStorage.setItem(`la_deck_items_${uid}`, JSON.stringify(stripped));
 

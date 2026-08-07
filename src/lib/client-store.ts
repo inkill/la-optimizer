@@ -37,7 +37,7 @@ async function loadCombos(): Promise<Combination[]> {
   if (_combos) return _combos;
   const res = await fetch(`${basePath()}/data/combinations.json`);
   const raw = (await res.json()) as Array<{
-    a: number; b: number; r: string; rr: number;
+    a: number; b: number; r: string; rr: number; cr: number;
     ba0: number; ba1: number; ba2: number;
     bd0: number; bd1: number; bd2: number;
   }>;
@@ -51,6 +51,7 @@ async function loadCombos(): Promise<Combination[]> {
     cardB: _cardById!.get(c.b)!,
     resultName: c.r,
     resultRarity: c.rr,
+    comboRarity: c.cr,
     ba0: c.ba0, ba1: c.ba1, ba2: c.ba2,
     bd0: c.bd0, bd1: c.bd1, bd2: c.bd2,
   }));
@@ -137,21 +138,31 @@ function genId(): string {
 }
 
 // ===== Default library seed =====
-const DEFAULT_RARE_FUSED = [
+// Mirrors the spreadsheet's default USER library (rows 12+). Every starter
+// card is level 5 and fused — including Bronze/Silver cards.
+// Cards: all Bronze (Common) + all Silver (Uncommon) + 10 specific Gold (Rare)
+// cards. The 10 Gold starter cards are listed below.
+const DEFAULT_GOLD_STARTERS = [
   'Bear', 'Science', 'Time', 'Energy', 'Wind', 'Villain',
   'Food', 'Life', 'Space', 'Monster',
 ];
 
 async function seedDefaultLibrary(userId: string): Promise<void> {
   const cards = await loadCards();
-  const commonUncommon = cards.filter((c) => c.rarity === 'Common' || c.rarity === 'Uncommon');
-  const rareCards = cards.filter((c) => c.rarity === 'Rare' && DEFAULT_RARE_FUSED.includes(c.name));
+  // All Bronze + Silver cards, fused.
+  const bronzeSilver = cards.filter(
+    (c) => c.rarity === 'Bronze' || c.rarity === 'Silver'
+  );
+  // 10 specific Gold cards, fused.
+  const goldStarters = cards.filter(
+    (c) => c.rarity === 'Gold' && DEFAULT_GOLD_STARTERS.includes(c.name)
+  );
 
   const items: LibraryItem[] = [];
-  for (const c of commonUncommon) {
-    items.push(makeLibraryItem(userId, c.id, 5, 1, false, false, false));
+  for (const c of bronzeSilver) {
+    items.push(makeLibraryItem(userId, c.id, 5, 1, true, false, false));
   }
-  for (const c of rareCards) {
+  for (const c of goldStarters) {
     items.push(makeLibraryItem(userId, c.id, 5, 1, true, false, false));
   }
   saveLibrary(userId, items);

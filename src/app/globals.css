@@ -123,29 +123,29 @@
 
 /* ===== Little Alchemist theme ===== */
 
-/* Rarity accent colors (used for card borders, badges, glows).
-   Palette avoids indigo/blue: Common=slate, Uncommon=emerald,
-   Rare=amber/gold, Onyx=violet. */
+/* Rarity accent colors — metal/gem naming (matches in-game):
+   Bronze (was Common), Silver (was Uncommon),
+   Gold (was Rare), Onix (was Onyx). */
 :root {
-  --rarity-common: oklch(0.55 0.01 250);
-  --rarity-uncommon: oklch(0.62 0.14 155);
-  --rarity-rare: oklch(0.72 0.16 75);
-  --rarity-onyx: oklch(0.58 0.2 305);
-  --rarity-common-fg: oklch(0.3 0.01 250);
-  --rarity-uncommon-fg: oklch(0.97 0.04 155);
-  --rarity-rare-fg: oklch(0.25 0.05 75);
-  --rarity-onyx-fg: oklch(0.97 0.03 305);
+  --rarity-bronze: oklch(0.62 0.08 65);
+  --rarity-silver: oklch(0.72 0.02 270);
+  --rarity-gold: oklch(0.80 0.15 85);
+  --rarity-Onix: oklch(0.70 0.10 200);
+  --rarity-bronze-fg: oklch(0.25 0.05 65);
+  --rarity-silver-fg: oklch(0.20 0.02 270);
+  --rarity-gold-fg: oklch(0.25 0.05 85);
+  --rarity-Onix-fg: oklch(0.15 0.03 200);
 }
 
 .dark {
-  --rarity-common: oklch(0.65 0.01 250);
-  --rarity-uncommon: oklch(0.7 0.16 155);
-  --rarity-rare: oklch(0.78 0.17 75);
-  --rarity-onyx: oklch(0.66 0.22 305);
-  --rarity-common-fg: oklch(0.85 0.01 250);
-  --rarity-uncommon-fg: oklch(0.15 0.05 155);
-  --rarity-rare-fg: oklch(0.2 0.05 75);
-  --rarity-onyx-fg: oklch(0.15 0.05 305);
+  --rarity-bronze: oklch(0.68 0.09 65);
+  --rarity-silver: oklch(0.78 0.02 270);
+  --rarity-gold: oklch(0.82 0.15 85);
+  --rarity-Onix: oklch(0.75 0.12 200);
+  --rarity-bronze-fg: oklch(0.18 0.05 65);
+  --rarity-silver-fg: oklch(0.15 0.02 270);
+  --rarity-gold-fg: oklch(0.20 0.05 85);
+  --rarity-Onix-fg: oklch(0.12 0.03 200);
 }
 
 /* Alchemist-themed dark canvas with subtle radial glow */

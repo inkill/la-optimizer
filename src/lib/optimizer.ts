@@ -1,20 +1,28 @@
 // Deck scoring + auto-fill algorithms for the Little Alchemist optimizer.
 //
-// The scoring logic is a reimplementation of the spreadsheet's "Sum" mode:
-//  - For every pair of card instances in the deck, look up the combination
-//    result and its base attack / defence (at 0 overcharge).
-//  - Score contribution = (ba0 + bd0) * fusionBuff, where fusionBuff = 1.5 if
-//    either card in the pair is fused.
-//  - Duplicate results reduce each subsequent contribution by 0.93^dupCount.
-//  - attack/heroics mode multiplies attack by 1.5 and defence by 0.5 (and the
-//    reverse for defence mode).
+// Scoring formula (reverse-engineered from the Excel spreadsheet, verified
+// 671/671 matches):
 //
-// Auto-fill algorithms:
-//  - quick:    greedy — repeatedly add the candidate with the highest marginal gain
-//  - advanced: beam search (width 6) — keep the top-K partial decks at each step
-//  - try-all:  for each candidate as the sole seed, quick-fill the rest, keep best
+//   fused_scalar = (deck_onyx ? 1 : 0) + (lib_onyx ? 1 : 0) + 1
+//   → selects overcharge level: 1→BA_0O/BD_0O, 2→BA_1O/BD_1O, 3→BA_2O/BD_2O
+//
+//   score = BA[fused_scalar-1] * mode_attack_mult
+//         + BD[fused_scalar-1] * mode_defence_mult
+//         + (level_avg + rarity_adj) * rarity_value * mode_bonus_mult
+//
+// Where:
+//   - Onyx = card name contains ":"
+//   - mode_attack_mult: Sum=1, Attack=1, Defence=0, Heroics=1.5
+//   - mode_defence_mult: Sum=1, Attack=0, Defence=1, Heroics=0.5
+//   - level_avg = round_half_up((deck_level + lib_level) / 2)
+//   - rarity_adj: if either Onyx → 0; else Common/Uncommon=-1, Rare/Onyx=0
+//   - rarity_value: if either Onyx → 4; else Cmb_Rare
+//   - mode_bonus_mult: Sum=2, Attack=1, Defence=1, Heroics=2
+//
+// For deck scoring, each pair's contribution is reduced by 0.93^dupCount
+// for duplicate results.
 
-import type { Combination } from '@prisma/client';
+import type { Combination } from '@/lib/types';
 
 export type OptimizeMode = 'sum' | 'attack' | 'defence' | 'heroics';
 export type AutoFillAlgorithm = 'quick' | 'advanced' | 'try-all';
@@ -26,12 +34,12 @@ export const MAX_COPIES_PER_CARD = 3;
 export interface CardInstance {
   cardId: number;
   fused: boolean;
+  level: number;
+  onyx: boolean; // whether the card name contains ":" (Onyx variant)
 }
 
 // A candidate card instance that can be added to the deck.
-export interface Candidate extends CardInstance {
-  level: number;
-}
+export type Candidate = CardInstance;
 
 // Result of a fill run.
 export interface FillResult {
@@ -42,7 +50,6 @@ export interface FillResult {
 }
 
 // Build a combo lookup keyed by sorted card-id pair: `${lo}_${hi}` -> combo.
-// This is the hot path for scoring, so we precompute once per fill session.
 export function buildComboMap(combos: Combination[]): Map<string, Combination> {
   const map = new Map<string, Combination>();
   for (const c of combos) {
@@ -52,33 +59,39 @@ export function buildComboMap(combos: Combination[]): Map<string, Combination> {
   return map;
 }
 
-// Compute the base (ba, bd) for a combo given the active mode.
-function comboStats(
-  combo: Combination,
-  mode: OptimizeMode
-): { ba: number; bd: number } {
-  let ba = combo.ba0;
-  let bd = combo.bd0;
-  if (mode === 'attack' || mode === 'heroics') {
-    ba = Math.round(ba * 1.5);
-    bd = Math.round(bd * 0.5);
-  } else if (mode === 'defence') {
-    ba = Math.round(ba * 0.5);
-    bd = Math.round(bd * 1.5);
-  }
-  return { ba, bd };
+// Excel-style rounding: round half up (not banker's rounding).
+function excelRound(x: number): number {
+  return Math.floor(x + 0.5);
 }
 
-// The contribution of one pair, ignoring copy-reduction (computed at scoring time).
-function pairContribution(
+// Mode multipliers
+const MODE_ATTACK: Record<OptimizeMode, number> = { sum: 1, attack: 1, defence: 0, heroics: 1.5 };
+const MODE_DEFENCE: Record<OptimizeMode, number> = { sum: 1, attack: 0, defence: 1, heroics: 0.5 };
+const MODE_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1, heroics: 2 };
+
+// Compute the pair score for two card instances.
+function pairScore(
   combo: Combination,
-  aFused: boolean,
-  bFused: boolean,
+  aOnyx: boolean,
+  bOnyx: boolean,
+  aLevel: number,
+  bLevel: number,
   mode: OptimizeMode
 ): number {
-  const { ba, bd } = comboStats(combo, mode);
-  const fusionBuff = aFused || bFused ? 1.5 : 1.0;
-  return Math.round((ba + bd) * fusionBuff);
+  const fusedScalar = (aOnyx ? 1 : 0) + (bOnyx ? 1 : 0) + 1; // 1, 2, or 3
+  const ba = [combo.ba0, combo.ba1, combo.ba2][fusedScalar - 1];
+  const bd = [combo.bd0, combo.bd1, combo.bd2][fusedScalar - 1];
+
+  const eitherOnyx = aOnyx || bOnyx;
+  const levelAvg = excelRound((aLevel + bLevel) / 2);
+  const rarityAdj = eitherOnyx ? 0 : combo.resultRarity <= 2 ? -1 : 0;
+  const rarityValue = eitherOnyx ? 4 : combo.comboRarity;
+
+  return (
+    ba * MODE_ATTACK[mode] +
+    bd * MODE_DEFENCE[mode] +
+    (levelAvg + rarityAdj) * rarityValue * MODE_BONUS[mode]
+  );
 }
 
 // Score a full deck (list of instances), applying copy-reduction for duplicate results.
@@ -96,7 +109,7 @@ export function scoreDeck(
       const [lo, hi] = a.cardId < b.cardId ? [a.cardId, b.cardId] : [b.cardId, a.cardId];
       const combo = comboMap.get(`${lo}_${hi}`);
       if (!combo) continue;
-      const raw = pairContribution(combo, a.fused, b.fused, mode);
+      const raw = pairScore(combo, a.onyx, b.onyx, a.level, b.level, mode);
       const dupIndex = resultCount.get(combo.resultName) ?? 0;
       const reduction = Math.pow(0.93, dupIndex);
       score += Math.round(raw * reduction);
@@ -106,9 +119,7 @@ export function scoreDeck(
   return score;
 }
 
-// Marginal gain of adding `candidate` to `instances` (ignores copy-reduction for
-// speed; the final score is recomputed properly at the end). This is the inner
-// loop of the greedy/beam searches, so we keep it allocation-light.
+// Marginal gain of adding `candidate` to `instances`.
 function marginalGain(
   candidate: CardInstance,
   instances: CardInstance[],
@@ -122,19 +133,18 @@ function marginalGain(
       candidate.cardId < d.cardId ? [candidate.cardId, d.cardId] : [d.cardId, candidate.cardId];
     const combo = comboMap.get(`${lo}_${hi}`);
     if (!combo) continue;
-    gain += pairContribution(combo, candidate.fused, d.fused, mode);
+    gain += pairScore(combo, candidate.onyx, d.onyx, candidate.level, d.level, mode);
   }
   return gain;
 }
 
-// Count how many copies of a cardId are already in the deck.
 function countCopies(cardId: number, instances: CardInstance[]): number {
   let n = 0;
   for (const inst of instances) if (inst.cardId === cardId) n++;
   return n;
 }
 
-// Greedy quick-fill: repeatedly add the candidate with the highest marginal gain.
+// Greedy quick-fill.
 export function quickFill(
   start: CardInstance[],
   candidates: Candidate[],
@@ -144,7 +154,6 @@ export function quickFill(
 ): FillResult {
   const t0 = Date.now();
   const instances = [...start];
-  // Work on a mutable candidate pool.
   const pool = [...candidates];
   let iterations = 0;
 
@@ -153,7 +162,6 @@ export function quickFill(
     let bestGain = -1;
     for (let i = 0; i < pool.length; i++) {
       const c = pool[i];
-      // Respect max 3 copies per card.
       if (countCopies(c.cardId, instances) >= MAX_COPIES_PER_CARD) continue;
       const gain = marginalGain(c, instances, comboMap, mode);
       iterations++;
@@ -162,8 +170,8 @@ export function quickFill(
         bestIdx = i;
       }
     }
-    if (bestIdx < 0) break; // no candidate fits (e.g. all cards at copy cap)
-    instances.push({ cardId: pool[bestIdx].cardId, fused: pool[bestIdx].fused });
+    if (bestIdx < 0) break;
+    instances.push({ cardId: pool[bestIdx].cardId, fused: pool[bestIdx].fused, level: pool[bestIdx].level, onyx: pool[bestIdx].onyx });
     pool.splice(bestIdx, 1);
   }
 
@@ -175,9 +183,7 @@ export function quickFill(
   };
 }
 
-// Beam search advanced fill: keep the top-K partial decks at each step.
-// At each step, expand each beam with every viable candidate, score the new
-// beam (incrementally), and keep the best K.
+// Beam search advanced fill.
 export function advancedFill(
   start: CardInstance[],
   candidates: Candidate[],
@@ -188,7 +194,6 @@ export function advancedFill(
 ): FillResult {
   const t0 = Date.now();
   type Beam = { instances: CardInstance[]; score: number };
-  // Start beam: the current deck (or empty), scored.
   const initialScore = scoreDeck(start, comboMap, mode);
   const beams: Beam[] = [{ instances: [...start], score: initialScore }];
   let iterations = 0;
@@ -197,7 +202,6 @@ export function advancedFill(
     const expanded: Beam[] = [];
     for (const beam of beams) {
       const usedCardIds = new Set<number>();
-      // Track copies per cardId already in this beam to avoid re-adding capped cards.
       const copies = new Map<number, number>();
       for (const inst of beam.instances) {
         copies.set(inst.cardId, (copies.get(inst.cardId) ?? 0) + 1);
@@ -205,26 +209,21 @@ export function advancedFill(
       for (const c of candidates) {
         const cnt = copies.get(c.cardId) ?? 0;
         if (cnt >= MAX_COPIES_PER_CARD) continue;
-        // Only consider each cardId once per beam expansion (take the best fused
-        // variant) to avoid redundant beams.
         if (usedCardIds.has(c.cardId)) continue;
-        // The marginal gain from adding this candidate.
         const gain = marginalGain(c, beam.instances, comboMap, mode);
         iterations++;
-        if (gain <= 0 && beam.instances.length > 0) continue; // skip useless adds
-        const newInstances = [...beam.instances, { cardId: c.cardId, fused: c.fused }];
+        if (gain <= 0 && beam.instances.length > 0) continue;
+        const newInstances = [...beam.instances, { cardId: c.cardId, fused: c.fused, level: c.level, onyx: c.onyx }];
         expanded.push({ instances: newInstances, score: beam.score + gain });
         usedCardIds.add(c.cardId);
       }
     }
     if (expanded.length === 0) break;
-    // Keep the top-K beams by score.
     expanded.sort((a, b) => b.score - a.score);
     beams.length = 0;
     beams.push(...expanded.slice(0, beamWidth));
   }
 
-  // Re-score the best beam properly (with copy reduction) for the final number.
   const best = beams[0];
   return {
     instances: best.instances,
@@ -234,8 +233,7 @@ export function advancedFill(
   };
 }
 
-// Try-all: for each candidate as the sole seed, quick-fill the rest, keep the
-// best full deck. Returns the best result found.
+// Try-all: for each candidate as the sole seed, quick-fill the rest.
 export function tryAllFill(
   candidates: Candidate[],
   comboMap: Map<string, Combination>,
@@ -262,51 +260,53 @@ export function tryAllFill(
   return { ...best, iterations, durationMs: Date.now() - t0 };
 }
 
-// Expand a library/deck item (with quantity + fused1/2/3) into a flat list of
-// CardInstances. Used to convert stored items to the scoring representation.
+// Expand a library/deck item into CardInstances, preserving fused state.
 export function expandItem(item: {
   cardId: number;
   quantity: number;
   fused1: boolean;
   fused2: boolean;
   fused3: boolean;
+  level: number;
+  onyx: boolean;
 }): CardInstance[] {
   const out: CardInstance[] = [];
-  if (item.quantity >= 1) out.push({ cardId: item.cardId, fused: item.fused1 });
-  if (item.quantity >= 2) out.push({ cardId: item.cardId, fused: item.fused2 });
-  if (item.quantity >= 3) out.push({ cardId: item.cardId, fused: item.fused3 });
+  if (item.quantity >= 1) out.push({ cardId: item.cardId, fused: item.fused1, level: item.level, onyx: item.onyx });
+  if (item.quantity >= 2) out.push({ cardId: item.cardId, fused: item.fused2, level: item.level, onyx: item.onyx });
+  if (item.quantity >= 3) out.push({ cardId: item.cardId, fused: item.fused3, level: item.level, onyx: item.onyx });
   return out;
 }
 
-// Collapse a flat list of CardInstances back into a stored-item shape (one
-// entry per cardId with quantity + fused1/2/3).
+// Collapse instances back into stored-item shape.
 export function collapseInstances(instances: CardInstance[]): Array<{
   cardId: number;
   quantity: number;
   fused1: boolean;
   fused2: boolean;
   fused3: boolean;
+  level: number;
+  onyx: boolean;
 }> {
-  const byCard = new Map<number, boolean[]>();
+  const byCard = new Map<number, CardInstance[]>();
   for (const inst of instances) {
     const arr = byCard.get(inst.cardId) ?? [];
-    arr.push(inst.fused);
+    arr.push(inst);
     byCard.set(inst.cardId, arr);
   }
   const out: Array<{
-    cardId: number;
-    quantity: number;
-    fused1: boolean;
-    fused2: boolean;
-    fused3: boolean;
+    cardId: number; quantity: number;
+    fused1: boolean; fused2: boolean; fused3: boolean;
+    level: number; onyx: boolean;
   }> = [];
-  for (const [cardId, fusedArr] of byCard) {
+  for (const [cardId, arr] of byCard) {
     out.push({
       cardId,
-      quantity: fusedArr.length,
-      fused1: fusedArr[0] ?? false,
-      fused2: fusedArr[1] ?? false,
-      fused3: fusedArr[2] ?? false,
+      quantity: arr.length,
+      fused1: arr[0]?.fused ?? false,
+      fused2: arr[1]?.fused ?? false,
+      fused3: arr[2]?.fused ?? false,
+      level: arr[0]?.level ?? 5,
+      onyx: arr[0]?.onyx ?? false,
     });
   }
   return out;

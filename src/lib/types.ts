@@ -1,6 +1,6 @@
 // Shared TypeScript types for the Little Alchemist app.
 
-export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Onyx';
+export type Rarity = 'Bronze' | 'Silver' | 'Gold' | 'Onix';
 
 export interface Card {
   id: number;
@@ -18,6 +18,7 @@ export interface Combination {
   cardBId: number;
   resultName: string;
   resultRarity: number;
+  comboRarity: number;
   ba0: number; ba1: number; ba2: number;
   bd0: number; bd1: number; bd2: number;
   cardA: Card;

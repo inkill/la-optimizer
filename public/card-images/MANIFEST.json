@@ -1,0 +1,1392 @@
+[
+  {
+    "cardName": "Adventure",
+    "fileName": "Adventure.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Adventure:Onyx",
+    "fileName": "Adventure_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Affliction",
+    "fileName": "Affliction.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Affliction:Onyx",
+    "fileName": "Affliction_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Angel",
+    "fileName": "Angel.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Angel:Onyx",
+    "fileName": "Angel_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Anger",
+    "fileName": "Anger.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Anger:Onyx",
+    "fileName": "Anger_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Apocalypse",
+    "fileName": "Apocalypse.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Apocalypse:Onyx",
+    "fileName": "Apocalypse_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Arachnid",
+    "fileName": "Arachnid.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Arachnid:Onyx",
+    "fileName": "Arachnid_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Arcade",
+    "fileName": "Arcade.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Arcade:Onyx",
+    "fileName": "Arcade_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Ash",
+    "fileName": "Ash.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Ash:Onyx",
+    "fileName": "Ash_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Atomic Aftermath",
+    "fileName": "Atomic_Aftermath.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Atomic Aftermath:Onyx",
+    "fileName": "Atomic_Aftermath_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Bat",
+    "fileName": "Bat.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Bat:Onyx",
+    "fileName": "Bat_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Bear",
+    "fileName": "Bear.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Bear:Onyx",
+    "fileName": "Bear_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Beauty",
+    "fileName": "Beauty.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Beauty:Onyx",
+    "fileName": "Beauty_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Bird",
+    "fileName": "Bird.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Bird:Onyx",
+    "fileName": "Bird_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Blob",
+    "fileName": "Blob.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Blob:Onyx",
+    "fileName": "Blob_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Blood",
+    "fileName": "Blood.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Blood:Onyx",
+    "fileName": "Blood_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Bone",
+    "fileName": "Bone.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Bone:Onyx",
+    "fileName": "Bone_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Camouflage",
+    "fileName": "Camouflage.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Camouflage:Onyx",
+    "fileName": "Camouflage_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Card",
+    "fileName": "Card.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Card:Onyx",
+    "fileName": "Card_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Cartoon",
+    "fileName": "Cartoon.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Cartoon:Onyx",
+    "fileName": "Cartoon_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Cat",
+    "fileName": "Cat.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Cat:Onyx",
+    "fileName": "Cat_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Celebration",
+    "fileName": "Celebration.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Celebration:Onyx",
+    "fileName": "Celebration_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Chinchilla",
+    "fileName": "Chinchilla.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Chinchilla:Onyx",
+    "fileName": "Chinchilla_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Cursed",
+    "fileName": "Cursed.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Cursed:Onyx",
+    "fileName": "Cursed_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Darkness",
+    "fileName": "Darkness.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Darkness:Onyx",
+    "fileName": "Darkness_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Death",
+    "fileName": "Death.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Death:Onyx",
+    "fileName": "Death_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Demon",
+    "fileName": "Demon.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Demon:Onyx",
+    "fileName": "Demon_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Desert",
+    "fileName": "Desert.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Desert:Onyx",
+    "fileName": "Desert_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Destruction",
+    "fileName": "Destruction.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Destruction:Onyx",
+    "fileName": "Destruction_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Dog",
+    "fileName": "Dog.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Dog:Onyx",
+    "fileName": "Dog_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Dragon",
+    "fileName": "Dragon.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Dragon:Onyx",
+    "fileName": "Dragon_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Earth",
+    "fileName": "Earth.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Earth:Onyx",
+    "fileName": "Earth_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Elf",
+    "fileName": "Elf.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Elf:Onyx",
+    "fileName": "Elf_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Energy",
+    "fileName": "Energy.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Energy:Onyx",
+    "fileName": "Energy_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Extraterrestrial",
+    "fileName": "Extraterrestrial.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Extraterrestrial:Onyx",
+    "fileName": "Extraterrestrial_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Fairy",
+    "fileName": "Fairy.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Fairy Tale",
+    "fileName": "Fairy_Tale.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Fairy Tale:Onyx",
+    "fileName": "Fairy_Tale_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Fairy:Onyx",
+    "fileName": "Fairy_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Fire",
+    "fileName": "Fire.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Fire:Onyx",
+    "fileName": "Fire_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Fish",
+    "fileName": "Fish.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Fish:Onyx",
+    "fileName": "Fish_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Food",
+    "fileName": "Food.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Food:Onyx",
+    "fileName": "Food_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Future Fight",
+    "fileName": "Future_Fight.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Future Fight:Onyx",
+    "fileName": "Future_Fight_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Galaxy Wars",
+    "fileName": "Galaxy_Wars.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Galaxy Wars:Onyx",
+    "fileName": "Galaxy_Wars_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Giant",
+    "fileName": "Giant.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Giant:Onyx",
+    "fileName": "Giant_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Golem",
+    "fileName": "Golem.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Golem:Onyx",
+    "fileName": "Golem_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Halloween",
+    "fileName": "Halloween.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Halloween:Onyx",
+    "fileName": "Halloween_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Hammer",
+    "fileName": "Hammer.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Hammer:Onyx",
+    "fileName": "Hammer_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Healing",
+    "fileName": "Healing.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Healing:Onyx",
+    "fileName": "Healing_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Holidays",
+    "fileName": "Holidays.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Holidays:Onyx",
+    "fileName": "Holidays_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Holy Water",
+    "fileName": "Holy_Water.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Holy Water:Onyx",
+    "fileName": "Holy_Water_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Hopefulness",
+    "fileName": "Hopefulness.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Hopefulness:Onyx",
+    "fileName": "Hopefulness_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Horn",
+    "fileName": "Horn.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Horn:Onyx",
+    "fileName": "Horn_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Horse",
+    "fileName": "Horse.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Horse:Onyx",
+    "fileName": "Horse_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Human",
+    "fileName": "Human.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Human:Onyx",
+    "fileName": "Human_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Hybrid",
+    "fileName": "Hybrid.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Hybrid:Onyx",
+    "fileName": "Hybrid_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Ice",
+    "fileName": "Ice.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Ice:Onyx",
+    "fileName": "Ice_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Immortality",
+    "fileName": "Immortality.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Immortality:Onyx",
+    "fileName": "Immortality_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Insect",
+    "fileName": "Insect.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Insect:Onyx",
+    "fileName": "Insect_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Invention",
+    "fileName": "Invention.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Invention:Onyx",
+    "fileName": "Invention_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Jungle",
+    "fileName": "Jungle.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Jungle:Onyx",
+    "fileName": "Jungle_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Knight",
+    "fileName": "Knight.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Knight:Onyx",
+    "fileName": "Knight_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Knowledge",
+    "fileName": "Knowledge.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Knowledge:Onyx",
+    "fileName": "Knowledge_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Leader",
+    "fileName": "Leader.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Leader:Onyx",
+    "fileName": "Leader_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Life",
+    "fileName": "Life.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Life:Onyx",
+    "fileName": "Life_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Love",
+    "fileName": "Love.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Love:Onyx",
+    "fileName": "Love_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Madness",
+    "fileName": "Madness.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Madness:Onyx",
+    "fileName": "Madness_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Magic",
+    "fileName": "Magic.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Magic:Onyx",
+    "fileName": "Magic_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Martial Arts",
+    "fileName": "Martial_Arts.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Martial Arts:Onyx",
+    "fileName": "Martial_Arts_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Medieval",
+    "fileName": "Medieval.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Medieval:Onyx",
+    "fileName": "Medieval_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Metal",
+    "fileName": "Metal.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Metal:Onyx",
+    "fileName": "Metal_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Mind Control",
+    "fileName": "Mind_Control.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Mind Control:Onyx",
+    "fileName": "Mind_Control_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Miniature",
+    "fileName": "Miniature.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Miniature:Onyx",
+    "fileName": "Miniature_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Monkey",
+    "fileName": "Monkey.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Monkey:Onyx",
+    "fileName": "Monkey_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Monster",
+    "fileName": "Monster.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Monster:Onyx",
+    "fileName": "Monster_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Moon",
+    "fileName": "Moon.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Moon:Onyx",
+    "fileName": "Moon_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Multiples",
+    "fileName": "Multiples.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Multiples:Onyx",
+    "fileName": "Multiples_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Music",
+    "fileName": "Music.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Music:Onyx",
+    "fileName": "Music_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Mutation",
+    "fileName": "Mutation.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Mutation:Onyx",
+    "fileName": "Mutation_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Myth",
+    "fileName": "Myth.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Myth:Onyx",
+    "fileName": "Myth_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "New Years",
+    "fileName": "New_Years.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "New Years:Onyx",
+    "fileName": "New_Years_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Parasite",
+    "fileName": "Parasite.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Parasite:Onyx",
+    "fileName": "Parasite_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Pirate",
+    "fileName": "Pirate.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Pirate:Onyx",
+    "fileName": "Pirate_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Plant",
+    "fileName": "Plant.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Plant:Onyx",
+    "fileName": "Plant_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Pocket Pet",
+    "fileName": "Pocket_Pet.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Pocket Pet:Onyx",
+    "fileName": "Pocket_Pet_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Poison",
+    "fileName": "Poison.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Poison:Onyx",
+    "fileName": "Poison_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Portal",
+    "fileName": "Portal.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Portal:Onyx",
+    "fileName": "Portal_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Precious Ring Lore",
+    "fileName": "Precious_Ring_Lore.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Precious Ring Lore:Onyx",
+    "fileName": "Precious_Ring_Lore_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Prehistoric",
+    "fileName": "Prehistoric.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Prehistoric:Onyx",
+    "fileName": "Prehistoric_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Psychic",
+    "fileName": "Psychic.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Psychic:Onyx",
+    "fileName": "Psychic_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Radiation",
+    "fileName": "Radiation.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Radiation:Onyx",
+    "fileName": "Radiation_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Rainbow",
+    "fileName": "Rainbow.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Rainbow:Onyx",
+    "fileName": "Rainbow_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Relic",
+    "fileName": "Relic.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Relic:Onyx",
+    "fileName": "Relic_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Reptile",
+    "fileName": "Reptile.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Reptile:Onyx",
+    "fileName": "Reptile_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Robot",
+    "fileName": "Robot.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Robot:Onyx",
+    "fileName": "Robot_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Rodent",
+    "fileName": "Rodent.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Rodent:Onyx",
+    "fileName": "Rodent_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Royal Game",
+    "fileName": "Royal_Game.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Royal Game:Onyx",
+    "fileName": "Royal_Game_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Royalty",
+    "fileName": "Royalty.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Royalty:Onyx",
+    "fileName": "Royalty_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sci-Fi",
+    "fileName": "Sci-Fi.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Sci-Fi:Onyx",
+    "fileName": "Sci-Fi_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Science",
+    "fileName": "Science.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Science:Onyx",
+    "fileName": "Science_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Shrine",
+    "fileName": "Shrine.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Shrine:Onyx",
+    "fileName": "Shrine_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sidekick",
+    "fileName": "Sidekick.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Sidekick:Onyx",
+    "fileName": "Sidekick_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sleep",
+    "fileName": "Sleep.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Sleep:Onyx",
+    "fileName": "Sleep_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Snake",
+    "fileName": "Snake.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Snake:Onyx",
+    "fileName": "Snake_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Space",
+    "fileName": "Space.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Space:Onyx",
+    "fileName": "Space_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Speed",
+    "fileName": "Speed.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Speed:Onyx",
+    "fileName": "Speed_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Spirit",
+    "fileName": "Spirit.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Spirit:Onyx",
+    "fileName": "Spirit_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sports",
+    "fileName": "Sports.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Sports:Onyx",
+    "fileName": "Sports_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Spy",
+    "fileName": "Spy.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Spy:Onyx",
+    "fileName": "Spy_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Strength",
+    "fileName": "Strength.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Strength:Onyx",
+    "fileName": "Strength_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Summertide",
+    "fileName": "Summertide.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Summertide:Onyx",
+    "fileName": "Summertide_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sun",
+    "fileName": "Sun.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Sun:Onyx",
+    "fileName": "Sun_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Superhero",
+    "fileName": "Superhero.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Superhero:Onyx",
+    "fileName": "Superhero_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sweets",
+    "fileName": "Sweets.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Sweets:Onyx",
+    "fileName": "Sweets_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Sword",
+    "fileName": "Sword.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Sword:Onyx",
+    "fileName": "Sword_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "The Chosen One",
+    "fileName": "The_Chosen_One.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "The Chosen One:Onyx",
+    "fileName": "The_Chosen_One_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Time",
+    "fileName": "Time.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Time:Onyx",
+    "fileName": "Time_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Toy",
+    "fileName": "Toy.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Toy:Onyx",
+    "fileName": "Toy_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Tree",
+    "fileName": "Tree.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Tree:Onyx",
+    "fileName": "Tree_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Trident",
+    "fileName": "Trident.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Trident:Onyx",
+    "fileName": "Trident_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Turkey Day",
+    "fileName": "Turkey_Day.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Turkey Day:Onyx",
+    "fileName": "Turkey_Day_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Turtle",
+    "fileName": "Turtle.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Turtle:Onyx",
+    "fileName": "Turtle_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Undead",
+    "fileName": "Undead.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Undead:Onyx",
+    "fileName": "Undead_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Underground",
+    "fileName": "Underground.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Underground:Onyx",
+    "fileName": "Underground_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Underwater",
+    "fileName": "Underwater.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Underwater:Onyx",
+    "fileName": "Underwater_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Vampire",
+    "fileName": "Vampire.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Vampire:Onyx",
+    "fileName": "Vampire_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Vehicle",
+    "fileName": "Vehicle.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Vehicle:Onyx",
+    "fileName": "Vehicle_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Viking",
+    "fileName": "Viking.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Viking:Onyx",
+    "fileName": "Viking_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Villain",
+    "fileName": "Villain.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Villain:Onyx",
+    "fileName": "Villain_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Void",
+    "fileName": "Void.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Void:Onyx",
+    "fileName": "Void_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "War",
+    "fileName": "War.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "War:Onyx",
+    "fileName": "War_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Water",
+    "fileName": "Water.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Water Serpent",
+    "fileName": "Water_Serpent.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Water Serpent:Onyx",
+    "fileName": "Water_Serpent_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Water:Onyx",
+    "fileName": "Water_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wealth",
+    "fileName": "Wealth.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Wealth:Onyx",
+    "fileName": "Wealth_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Weapon",
+    "fileName": "Weapon.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Weapon:Onyx",
+    "fileName": "Weapon_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Werewolf",
+    "fileName": "Werewolf.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Werewolf:Onyx",
+    "fileName": "Werewolf_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wind",
+    "fileName": "Wind.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Wind:Onyx",
+    "fileName": "Wind_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wings",
+    "fileName": "Wings.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Wings:Onyx",
+    "fileName": "Wings_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wintertide",
+    "fileName": "Wintertide.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Wintertide:Onyx",
+    "fileName": "Wintertide_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wizard",
+    "fileName": "Wizard.png",
+    "rarity": "Silver"
+  },
+  {
+    "cardName": "Wizard:Onyx",
+    "fileName": "Wizard_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wizarding School",
+    "fileName": "Wizarding_School.png",
+    "rarity": "Gold"
+  },
+  {
+    "cardName": "Wizarding School:Onyx",
+    "fileName": "Wizarding_School_Onyx.png",
+    "rarity": "Platinum"
+  },
+  {
+    "cardName": "Wolf",
+    "fileName": "Wolf.png",
+    "rarity": "Bronze"
+  },
+  {
+    "cardName": "Wolf:Onyx",
+    "fileName": "Wolf_Onyx.png",
+    "rarity": "Platinum"
+  }
+]

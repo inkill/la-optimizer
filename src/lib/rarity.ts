@@ -1,7 +1,13 @@
 // Rarity styling helpers.
 import type { Rarity } from './types';
 
-export const RARITIES: Rarity[] = ['Common', 'Uncommon', 'Rare', 'Onyx'];
+// Rarity names use the in-game metal/gem naming (not the spreadsheet's
+// Common/Uncommon/Rare/Onyx):
+//   1 = Bronze  (was Common)
+//   2 = Silver  (was Uncommon)
+//   3 = Gold    (was Rare)
+//   4 = Onix (was Onyx)
+export const RARITIES: Rarity[] = ['Bronze', 'Silver', 'Gold', 'Onix'];
 
 // Returns the CSS variable name for a rarity's accent color.
 export function rarityVar(rarity: Rarity): string {
@@ -12,7 +18,6 @@ export function rarityFgVar(rarity: Rarity): string {
   return `var(--rarity-${rarity.toLowerCase()}-fg)`;
 }
 
-// Inline style for a rarity-colored border + subtle glow.
 export function rarityBorderStyle(rarity: Rarity): React.CSSProperties {
   const color = rarityVar(rarity);
   return {
@@ -21,10 +26,7 @@ export function rarityBorderStyle(rarity: Rarity): React.CSSProperties {
   };
 }
 
-// Tailwind classes for rarity badges (uses inline style for the actual color
-// since Tailwind v4 can't generate dynamic class names from runtime values).
 export function rarityBadgeClass(rarity: Rarity): string {
-  // Solid colored badge
   return 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide';
 }
 
@@ -35,14 +37,14 @@ export function rarityBadgeStyle(rarity: Rarity): React.CSSProperties {
   };
 }
 
-// Numeric rarity code from spreadsheet
+// Numeric rarity code from spreadsheet → metal/gem name
 export const RARITY_CODE_TO_NAME: Record<number, Rarity> = {
-  1: 'Common',
-  2: 'Uncommon',
-  3: 'Rare',
-  4: 'Onyx',
+  1: 'Bronze',
+  2: 'Silver',
+  3: 'Gold',
+  4: 'Onix',
 };
 
 export function rarityFromCode(code: number): Rarity {
-  return RARITY_CODE_TO_NAME[code] ?? 'Common';
+  return RARITY_CODE_TO_NAME[code] ?? 'Bronze';
 }
