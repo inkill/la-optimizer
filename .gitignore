@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# database
+db/*.db
+db/*.db-journal
+
+# misc
+.DS_Store
+*.pem
+dev.log
+server.log
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# build artifacts
+*.tsbuildinfo
