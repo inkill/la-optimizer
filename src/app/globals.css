@@ -125,27 +125,27 @@
 
 /* Rarity accent colors — metal/gem naming (matches in-game):
    Bronze (was Common), Silver (was Uncommon),
-   Gold (was Rare), Onix (was Onyx). */
+   Gold (was Rare), Onyx (highest tier). */
 :root {
   --rarity-bronze: oklch(0.62 0.08 65);
   --rarity-silver: oklch(0.72 0.02 270);
   --rarity-gold: oklch(0.80 0.15 85);
-  --rarity-Onix: oklch(0.70 0.10 200);
+  --rarity-onyx: oklch(0.45 0.12 290);
   --rarity-bronze-fg: oklch(0.25 0.05 65);
   --rarity-silver-fg: oklch(0.20 0.02 270);
   --rarity-gold-fg: oklch(0.25 0.05 85);
-  --rarity-Onix-fg: oklch(0.15 0.03 200);
+  --rarity-onyx-fg: oklch(0.97 0.03 290);
 }
 
 .dark {
   --rarity-bronze: oklch(0.68 0.09 65);
   --rarity-silver: oklch(0.78 0.02 270);
   --rarity-gold: oklch(0.82 0.15 85);
-  --rarity-Onix: oklch(0.75 0.12 200);
+  --rarity-onyx: oklch(0.55 0.15 290);
   --rarity-bronze-fg: oklch(0.18 0.05 65);
   --rarity-silver-fg: oklch(0.15 0.02 270);
   --rarity-gold-fg: oklch(0.20 0.05 85);
-  --rarity-Onix-fg: oklch(0.12 0.03 200);
+  --rarity-onyx-fg: oklch(0.97 0.03 290);
 }
 
 /* Alchemist-themed dark canvas with subtle radial glow */

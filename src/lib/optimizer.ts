@@ -49,6 +49,31 @@ export interface FillResult {
   durationMs: number;
 }
 
+// Optional resolver function: maps Onyx cardId → base cardId.
+// Set by the caller (from client-store) so Onyx cards find combinations via
+// their base card. If not set, uses the cardId as-is.
+let _baseIdResolver: ((cardId: number) => number) | null = null;
+
+export function setBaseIdResolver(fn: (cardId: number) => number) {
+  _baseIdResolver = fn;
+}
+
+function resolveBaseId(cardId: number): number {
+  return _baseIdResolver ? _baseIdResolver(cardId) : cardId;
+}
+
+// Look up a combination by two card IDs, resolving Onyx → base IDs first.
+function lookupCombo(
+  comboMap: Map<string, Combination>,
+  aId: number,
+  bId: number
+): Combination | undefined {
+  const aBase = resolveBaseId(aId);
+  const bBase = resolveBaseId(bId);
+  const [lo, hi] = aBase < bBase ? [aBase, bBase] : [bBase, aBase];
+  return comboMap.get(`${lo}_${hi}`);
+}
+
 // Build a combo lookup keyed by sorted card-id pair: `${lo}_${hi}` -> combo.
 export function buildComboMap(combos: Combination[]): Map<string, Combination> {
   const map = new Map<string, Combination>();
@@ -106,8 +131,7 @@ export function scoreDeck(
     for (let j = i + 1; j < instances.length; j++) {
       const a = instances[i];
       const b = instances[j];
-      const [lo, hi] = a.cardId < b.cardId ? [a.cardId, b.cardId] : [b.cardId, a.cardId];
-      const combo = comboMap.get(`${lo}_${hi}`);
+      const combo = lookupCombo(comboMap, a.cardId, b.cardId);
       if (!combo) continue;
       const raw = pairScore(combo, a.onyx, b.onyx, a.level, b.level, mode);
       const dupIndex = resultCount.get(combo.resultName) ?? 0;
@@ -129,9 +153,7 @@ function marginalGain(
   let gain = 0;
   for (let i = 0; i < instances.length; i++) {
     const d = instances[i];
-    const [lo, hi] =
-      candidate.cardId < d.cardId ? [candidate.cardId, d.cardId] : [d.cardId, candidate.cardId];
-    const combo = comboMap.get(`${lo}_${hi}`);
+    const combo = lookupCombo(comboMap, candidate.cardId, d.cardId);
     if (!combo) continue;
     gain += pairScore(combo, candidate.onyx, d.onyx, candidate.level, d.level, mode);
   }

@@ -6,8 +6,8 @@ import type { Rarity } from './types';
 //   1 = Bronze  (was Common)
 //   2 = Silver  (was Uncommon)
 //   3 = Gold    (was Rare)
-//   4 = Onix (was Onyx)
-export const RARITIES: Rarity[] = ['Bronze', 'Silver', 'Gold', 'Onix'];
+//   4 = Onyx    (highest tier)
+export const RARITIES: Rarity[] = ['Bronze', 'Silver', 'Gold', 'Onyx'];
 
 // Returns the CSS variable name for a rarity's accent color.
 export function rarityVar(rarity: Rarity): string {
@@ -42,7 +42,7 @@ export const RARITY_CODE_TO_NAME: Record<number, Rarity> = {
   1: 'Bronze',
   2: 'Silver',
   3: 'Gold',
-  4: 'Onix',
+  4: 'Onyx',
 };
 
 export function rarityFromCode(code: number): Rarity {

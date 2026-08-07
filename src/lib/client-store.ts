@@ -14,6 +14,9 @@ let _combos: Combination[] | null = null;
 let _comboMap: Map<string, Combination> | null = null;
 let _cardById: Map<number, Card> | null = null;
 let _cardByName: Map<string, Card> | null = null;
+// Onyx cards (e.g. "Speed:Onyx") have their own IDs but use the BASE card's
+// combinations. This map resolves Onyx cardId → base cardId for combo lookups.
+let _onyxToBaseId: Map<number, number> | null = null;
 
 // basePath prefix: set by the build for GitHub Pages (e.g. "/la-optimizer").
 // Falls back to "" for local dev / root deployment.
@@ -30,6 +33,18 @@ async function loadCards(): Promise<Card[]> {
   _cards = (await res.json()) as Card[];
   _cardById = new Map(_cards.map((c) => [c.id, c]));
   _cardByName = new Map(_cards.map((c) => [c.name, c]));
+  // Build Onyx → base card ID map. Onyx cards have ":" in the name (e.g.
+  // "Speed:Onyx"); their base card is the one without the suffix ("Speed").
+  _onyxToBaseId = new Map();
+  for (const c of _cards) {
+    if (c.name.includes(':')) {
+      const baseName = c.name.split(':')[0];
+      const baseCard = _cardByName.get(baseName);
+      if (baseCard) {
+        _onyxToBaseId.set(c.id, baseCard.id);
+      }
+    }
+  }
   return _cards;
 }
 
@@ -79,6 +94,12 @@ export function getCardById(id: number): Card | undefined {
 }
 export function getCardByName(name: string): Card | undefined {
   return _cardByName?.get(name);
+}
+// Resolve an Onyx card ID to its base card ID. Onyx cards (e.g. "Speed:Onyx")
+// use the same combinations as their base card ("Speed"), but with Onyx
+// scoring modifiers. Returns the original ID if not an Onyx card.
+export function getBaseCardId(cardId: number): number {
+  return _onyxToBaseId?.get(cardId) ?? cardId;
 }
 
 // ===== localStorage helpers =====
