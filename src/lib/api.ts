@@ -27,10 +27,13 @@ import {
   expandItem,
   collapseInstances,
   scoreDeck,
+  calculateFusionBuff,
   setBaseIdResolver,
   type OptimizeMode,
   type Candidate,
   type CardInstance,
+  type ScoringParams,
+  DEFAULT_SCORING_PARAMS,
 } from './optimizer';
 
 // Helper: check if a card is Onyx (name contains ":")
@@ -127,12 +130,10 @@ export async function fetchCardDetail(id: number) {
   if (!card) throw new Error('Card not found');
   await store.getCombos();
   const comboMap = store.getComboMap();
-  // Resolve Onyx card ID → base card ID for combo lookup
-  const baseId = store.getBaseCardId(id);
   const combos = [];
   for (const [key, combo] of comboMap) {
-    if (combo.cardAId === baseId || combo.cardBId === baseId) {
-      const partner = combo.cardAId === baseId ? combo.cardB : combo.cardA;
+    if (combo.cardAId === id || combo.cardBId === id) {
+      const partner = combo.cardAId === id ? combo.cardB : combo.cardA;
       combos.push({
         id: combo.id,
         partner,
@@ -163,15 +164,10 @@ export async function fetchCombinations(query: ComboQuery = {}) {
   let results: Combination[] = [];
 
   if (query.a && query.b) {
-    // Pair mode: find the combo between two specific cards.
-    // Strip ":Onyx" suffix and resolve to base card IDs — Onyx cards use
-    // the same combinations as their base card.
-    const cardA = cards.find((c) => c.name === query.a || c.name.split(':')[0] === query.a.split(':')[0]);
-    const cardB = cards.find((c) => c.name === query.b || c.name.split(':')[0] === query.b.split(':')[0]);
+    const cardA = cards.find((c) => c.name === query.a);
+    const cardB = cards.find((c) => c.name === query.b);
     if (cardA && cardB) {
-      const aBase = store.getBaseCardId(cardA.id);
-      const bBase = store.getBaseCardId(cardB.id);
-      const [lo, hi] = aBase < bBase ? [aBase, bBase] : [bBase, aBase];
+      const [lo, hi] = cardA.id < cardB.id ? [cardA.id, cardB.id] : [cardB.id, cardA.id];
       const combo = comboMap.get(`${lo}_${hi}`);
       if (combo) results = [combo];
     }
@@ -181,9 +177,8 @@ export async function fetchCombinations(query: ComboQuery = {}) {
       if (query.result && !c.resultName.toLowerCase().includes(query.result.toLowerCase())) return false;
       if (query.rarity && query.rarity !== 'all' && c.resultRarity !== parseInt(query.rarity)) return false;
       if (query.a) {
-        // Strip ":Onyx" suffix — Onyx cards use base card combinations
-        const aBase = query.a.split(':')[0].toLowerCase();
-        if (!c.cardA.name.toLowerCase().includes(aBase) && !c.cardB.name.toLowerCase().includes(aBase)) return false;
+        const aLower = query.a.toLowerCase();
+        if (!c.cardA.name.toLowerCase().includes(aLower) && !c.cardB.name.toLowerCase().includes(aLower)) return false;
       }
       return true;
     });
@@ -346,7 +341,8 @@ const M_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1, h
 function excelRound(x: number): number { return Math.floor(x + 0.5); }
 
 function pairScore(
-  combo: Combination, aOnyx: boolean, bOnyx: boolean, aLevel: number, bLevel: number, mode: OptimizeMode
+  combo: Combination, aOnyx: boolean, bOnyx: boolean, aLevel: number, bLevel: number,
+  mode: OptimizeMode, fusionBuff: number
 ): number {
   const fs = (aOnyx ? 1 : 0) + (bOnyx ? 1 : 0) + 1;
   const ba = [combo.ba0, combo.ba1, combo.ba2][fs - 1];
@@ -355,14 +351,17 @@ function pairScore(
   const lvAvg = excelRound((aLevel + bLevel) / 2);
   const rAdj = either ? 0 : combo.resultRarity <= 2 ? -1 : 0;
   const rVal = either ? 4 : combo.comboRarity;
-  return ba * M_ATTACK[mode] + bd * M_DEFENCE[mode] + (lvAvg + rAdj) * rVal * M_BONUS[mode];
+  const battlePart = (ba * M_ATTACK[mode] + bd * M_DEFENCE[mode]) * fusionBuff;
+  const rarityPart = (lvAvg + rAdj) * rVal * M_BONUS[mode];
+  return battlePart + rarityPart;
 }
 
-export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult> {
+export async function fetchOptimize(
+  mode: OptimizeMode,
+  params: ScoringParams = DEFAULT_SCORING_PARAMS
+): Promise<OptimizeResult> {
   await store.getCards();
   await store.getCombos();
-  // Register the Onyx → base card ID resolver so the optimizer finds combos
-  // for Onyx cards via their base card.
   setBaseIdResolver(store.getBaseCardId);
   const uid = requireUserId();
   const { deck } = store.getActiveDeckSync(uid);
@@ -372,39 +371,45 @@ export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult>
 
   const instances = deck.items.flatMap((it) => expandItemWithMeta(it));
   const comboMap = store.getComboMap();
+
+  // Calculate Fusion Buff (or use override)
+  const fusionBuff = params.fusionBuffOverride ?? calculateFusionBuff(instances);
+
+  // Build copy indices for Copy Reduction (duplicate CARDS, not results)
+  const copyIndices: number[] = [];
+  const countPerCard = new Map<number, number>();
+  for (const inst of instances) {
+    const idx = countPerCard.get(inst.cardId) ?? 0;
+    copyIndices.push(idx);
+    countPerCard.set(inst.cardId, idx + 1);
+  }
+  const cr = params.copyReduction;
+
   let score = 0;
-  const resultCount = new Map<string, number>();
   const pairs: Array<{ a: string; b: string; result: string; resultRarity: number; ba: number; bd: number; contribution: number }> = [];
   let fusedCount = 0;
   for (const it of deck.items) { if (it.fused1 || it.fused2 || it.fused3) fusedCount++; }
   const cardName = new Map(deck.items.map((it) => [it.cardId, it.card.name]));
-  const contributions: Array<{ aId: number; bId: number; result: string; resultRarity: number; ba: number; bd: number; raw: number }> = [];
 
   for (let i = 0; i < instances.length; i++) {
     for (let j = i + 1; j < instances.length; j++) {
       const a = instances[i], b = instances[j];
-      // Resolve Onyx card IDs to base card IDs for combo lookup
+      // Resolve Onyx → base IDs for combo lookup
       const aBase = store.getBaseCardId(a.cardId);
       const bBase = store.getBaseCardId(b.cardId);
       const [lo, hi] = aBase < bBase ? [aBase, bBase] : [bBase, aBase];
       const combo = comboMap.get(`${lo}_${hi}`);
       if (!combo) continue;
-      const raw = pairScore(combo, a.onyx, b.onyx, a.level, b.level, mode);
+      const raw = pairScore(combo, a.onyx, b.onyx, a.level, b.level, mode, fusionBuff);
+      // Copy Reduction: based on duplicate card indices
+      const copyMult = Math.pow(cr, copyIndices[i] + copyIndices[j]);
+      const contribution = Math.round(raw * copyMult);
+      score += contribution;
       const fs = (a.onyx ? 1 : 0) + (b.onyx ? 1 : 0) + 1;
       const ba = [combo.ba0, combo.ba1, combo.ba2][fs - 1];
       const bd = [combo.bd0, combo.bd1, combo.bd2][fs - 1];
-      contributions.push({ aId: a.cardId, bId: b.cardId, result: combo.resultName, resultRarity: combo.resultRarity, ba, bd, raw });
-      resultCount.set(combo.resultName, (resultCount.get(combo.resultName) ?? 0) + 1);
+      pairs.push({ a: cardName.get(a.cardId) ?? '', b: cardName.get(b.cardId) ?? '', result: combo.resultName, resultRarity: combo.resultRarity, ba, bd, contribution });
     }
-  }
-  const seenCount = new Map<string, number>();
-  for (const c of contributions) {
-    const dupIndex = seenCount.get(c.result) ?? 0;
-    const reduction = Math.pow(0.93, dupIndex);
-    const contribution = Math.round(c.raw * reduction);
-    score += contribution;
-    seenCount.set(c.result, dupIndex + 1);
-    pairs.push({ a: cardName.get(c.aId) ?? '', b: cardName.get(c.bId) ?? '', result: c.result, resultRarity: c.resultRarity, ba: c.ba, bd: c.bd, contribution });
   }
   pairs.sort((a, b) => b.contribution - a.contribution);
 
@@ -420,14 +425,17 @@ export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult>
     const libInstances = expandItemWithMeta(lib);
     let gain = 0;
     for (const libInst of libInstances) {
-      for (const d of instances) {
-        // Resolve Onyx → base IDs for combo lookup
+      for (let di = 0; di < instances.length; di++) {
+        const d = instances[di];
         const aBase = store.getBaseCardId(libInst.cardId);
         const bBase = store.getBaseCardId(d.cardId);
         const [lo, hi] = aBase < bBase ? [aBase, bBase] : [bBase, aBase];
         const combo = comboMap.get(`${lo}_${hi}`);
         if (!combo) continue;
-        gain += pairScore(combo, libInst.onyx, d.onyx, libInst.level, d.level, mode);
+        const raw = pairScore(combo, libInst.onyx, d.onyx, libInst.level, d.level, mode, fusionBuff);
+        // Apply copy reduction for the existing deck card
+        const copyMult = Math.pow(cr, copyIndices[di]);
+        gain += raw * copyMult;
       }
     }
     if (gain > 0) {
@@ -436,17 +444,17 @@ export async function fetchOptimize(mode: OptimizeMode): Promise<OptimizeResult>
   }
   suggestions.sort((a, b) => b.gain - a.gain);
 
-  return { mode, score, deckSize: instances.length, breakdown: { comboCount: contributions.length, fusedCount, rarityCounts }, pairs: pairs.slice(0, 50), suggestions: suggestions.slice(0, 30) };
+  return { mode, score, deckSize: instances.length, breakdown: { comboCount: pairs.length, fusedCount, rarityCounts }, pairs: pairs.slice(0, 50), suggestions: suggestions.slice(0, 30) };
 }
 
 export async function autoFill(input: {
   algorithm: 'quick' | 'advanced' | 'try-all';
   mode: OptimizeMode;
   keepCurrent?: boolean;
+  params?: ScoringParams;
 }): Promise<AutoFillResult> {
   await store.getCards();
   await store.getCombos();
-  setBaseIdResolver(store.getBaseCardId);
   const uid = requireUserId();
   const { deck } = store.getActiveDeckSync(uid);
   if (!deck) throw new Error('No active deck');
@@ -473,10 +481,11 @@ export async function autoFill(input: {
   }
 
   const comboMap = store.getComboMap();
+  const params = input.params ?? DEFAULT_SCORING_PARAMS;
   let result;
-  if (input.algorithm === 'quick') result = quickFill(start, pool, comboMap, input.mode);
-  else if (input.algorithm === 'advanced') result = advancedFill(start, pool, comboMap, input.mode);
-  else result = tryAllFill(pool, comboMap, input.mode);
+  if (input.algorithm === 'quick') result = quickFill(start, pool, comboMap, input.mode, DECK_MAX_SIZE, params);
+  else if (input.algorithm === 'advanced') result = advancedFill(start, pool, comboMap, input.mode, DECK_MAX_SIZE, 6, params);
+  else result = tryAllFill(pool, comboMap, input.mode, DECK_MAX_SIZE, params);
 
   const collapsed = collapseInstances(result.instances);
   collapsed.sort((a, b) => a.cardId - b.cardId);

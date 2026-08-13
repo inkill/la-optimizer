@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchOptimize, fetchActiveDeck, autoFill } from '@/lib/api';
+import { calculateFusionBuff, DEFAULT_SCORING_PARAMS, type ScoringParams } from '@/lib/optimizer';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import {
   Loader2, Sparkles, Swords, Shield, Trophy, TrendingUp, Zap, Plus, Crown, Gauge,
-  Wand2, BrainCircuit, Shuffle,
+  Wand2, BrainCircuit, Shuffle, Settings2,
 } from 'lucide-react';
 import { rarityFromCode, RARITIES } from '@/lib/rarity';
 import { RarityBadge } from './rarity-badge';
@@ -53,15 +56,26 @@ export function OptimizerTab() {
   const [mode, setMode] = useState<Mode>('sum');
   const [keepCurrent, setKeepCurrent] = useState(false);
   const [lastFill, setLastFill] = useState<AutoFillResult | null>(null);
+
+  // Scoring parameters — configurable by the user
+  const [copyReduction, setCopyReduction] = useState(DEFAULT_SCORING_PARAMS.copyReduction);
+  const [fusionBuffOverride, setFusionBuffOverride] = useState<number | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const params: ScoringParams = useMemo(() => ({
+    copyReduction,
+    fusionBuffOverride,
+  }), [copyReduction, fusionBuffOverride]);
+
   const { data: deckData } = useQuery({ queryKey: ['deck'], queryFn: fetchActiveDeck });
   const { data, isLoading } = useQuery({
-    queryKey: ['optimize', mode],
-    queryFn: () => fetchOptimize(mode),
+    queryKey: ['optimize', mode, copyReduction, fusionBuffOverride],
+    queryFn: () => fetchOptimize(mode, params),
   });
 
   const qc = useQueryClient();
   const fillMut = useMutation({
-    mutationFn: (algo: Algo) => autoFill({ algorithm: algo, mode, keepCurrent }),
+    mutationFn: (algo: Algo) => autoFill({ algorithm: algo, mode, keepCurrent, params }),
     onSuccess: (result) => {
       setLastFill(result);
       qc.invalidateQueries({ queryKey: ['deck'] });
@@ -76,6 +90,21 @@ export function OptimizerTab() {
   });
 
   const deckSize = deckData?.size ?? 0;
+
+  // Calculate the current Fusion Buff for display
+  const calculatedFb = useMemo(() => {
+    if (!deckData?.deck?.items) return null;
+    const instances = deckData.deck.items.flatMap((it: any) => {
+      const out = [];
+      if (it.quantity >= 1) out.push({ fused: it.fused1 });
+      if (it.quantity >= 2) out.push({ fused: it.fused2 });
+      if (it.quantity >= 3) out.push({ fused: it.fused3 });
+      return out;
+    });
+    return calculateFusionBuff(instances);
+  }, [deckData]);
+
+  const effectiveFb = fusionBuffOverride ?? calculatedFb;
 
   return (
     <div className="space-y-5">
@@ -129,6 +158,119 @@ export function OptimizerTab() {
           <Label htmlFor="keep-current" className="text-sm cursor-pointer">
             Keep current deck cards (fill the remaining slots only)
           </Label>
+        </div>
+
+        {/* Advanced scoring parameters */}
+        <div className="mb-3">
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            Advanced scoring parameters
+            <span className="text-xs">({showAdvanced ? 'hide' : 'show'})</span>
+          </button>
+          {showAdvanced && (
+            <div className="mt-3 space-y-4 rounded-lg border bg-background/40 p-4">
+              {/* Copy Reduction */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Copy Reduction</Label>
+                  <span className="text-sm font-mono text-violet-300">{copyReduction.toFixed(2)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Penalty per duplicate card copy in the deck. Lower = stronger penalty for duplicates.
+                  (Excel default: 0.93)
+                </p>
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[copyReduction]}
+                    onValueChange={(v) => setCopyReduction(v[0])}
+                    min={0.5}
+                    max={1.0}
+                    step={0.01}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={copyReduction}
+                    onChange={(e) => setCopyReduction(parseFloat(e.target.value) || 0.93)}
+                    step={0.01}
+                    min={0}
+                    max={1}
+                    className="w-20 h-8"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => setCopyReduction(0.93)}
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </div>
+
+              {/* Fusion Buff */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Fusion Buff</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono text-amber-300">
+                      {effectiveFb !== null ? effectiveFb.toFixed(4) : '—'}
+                    </span>
+                    {fusionBuffOverride !== null && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setFusionBuffOverride(null)}
+                      >
+                        Auto
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Multiplier applied to the BA+BD part of each pair score.
+                  Auto-calculated: <span className="font-mono">2 − SIN(fused_ratio × π/2)⁵</span>
+                  {calculatedFb !== null && (
+                    <> → current: <span className="font-mono text-amber-300">{calculatedFb.toFixed(4)}</span></>
+                  )}
+                </p>
+                {fusionBuffOverride !== null ? (
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      value={[fusionBuffOverride]}
+                      onValueChange={(v) => setFusionBuffOverride(v[0])}
+                      min={1.0}
+                      max={2.0}
+                      step={0.01}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      value={fusionBuffOverride}
+                      onChange={(e) => setFusionBuffOverride(parseFloat(e.target.value) || 1.75)}
+                      step={0.01}
+                      min={1}
+                      max={2}
+                      className="w-20 h-8"
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setFusionBuffOverride(calculatedFb ?? 1.75)}
+                  >
+                    Override manually
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           {ALGOS.map((a) => (

@@ -33,8 +33,7 @@ async function loadCards(): Promise<Card[]> {
   _cards = (await res.json()) as Card[];
   _cardById = new Map(_cards.map((c) => [c.id, c]));
   _cardByName = new Map(_cards.map((c) => [c.name, c]));
-  // Build Onyx → base card ID map. Onyx cards have ":" in the name (e.g.
-  // "Speed:Onyx"); their base card is the one without the suffix ("Speed").
+  // Build Onyx → base card ID map. Onyx cards have ":" in the name.
   _onyxToBaseId = new Map();
   for (const c of _cards) {
     if (c.name.includes(':')) {
