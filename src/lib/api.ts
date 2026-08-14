@@ -17,7 +17,7 @@ import type {
   Stats,
   User,
 } from './types';
-import { DECK_MAX_SIZE, MAX_COPIES_PER_CARD } from './types';
+import { MAX_COPIES_PER_CARD } from './types';
 import * as store from './client-store';
 import {
   buildComboMap,
@@ -27,6 +27,7 @@ import {
   expandItem,
   collapseInstances,
   scoreDeck,
+  scoreLibraryCard,
   calculateFusionBuff,
   setBaseIdResolver,
   type OptimizeMode,
@@ -34,6 +35,7 @@ import {
   type CardInstance,
   type ScoringParams,
   DEFAULT_SCORING_PARAMS,
+  DECK_MAX_SIZE,
 } from './optimizer';
 
 // Helper: check if a card is Onyx (name contains ":")
@@ -371,89 +373,75 @@ export async function fetchOptimize(
 
   const deckInstances = deck.items.flatMap((it) => expandItemWithMeta(it));
   const comboMap = store.getComboMap();
-
-  // Get library instances for scoring (library × deck pairs)
   const library = store.getLibrarySync(uid);
-  const libraryInstances = library.flatMap((lib) => expandItemWithMeta(lib));
+
+  // Build library items with quantities for the scoring function
+  const libraryItems = library.map((lib) => ({
+    instance: expandItemWithMeta(lib)[0], // first copy's stats
+    quantity: lib.quantity,
+  }));
 
   // Calculate Fusion Buff from the deck
   const fusionBuff = params.fusionBuffOverride ?? calculateFusionBuff(deckInstances);
-  const cr = params.copyReduction;
 
-  // Build library copy indices for Copy Reduction
-  const libCopyIndices: number[] = [];
-  const libCountPerCard = new Map<number, number>();
-  for (const inst of libraryInstances) {
-    const idx = libCountPerCard.get(inst.cardId) ?? 0;
-    libCopyIndices.push(idx);
-    libCountPerCard.set(inst.cardId, idx + 1);
+  // Compute copy scores for all library cards
+  const allCopyScores: Array<{ name: string; cardId: number; scores: number[]; fused: boolean }> = [];
+  for (const lib of library) {
+    const libInstance = expandItemWithMeta(lib)[0];
+    const scores = scoreLibraryCard(libInstance, deckInstances, comboMap, mode, params, fusionBuff, lib.quantity);
+    allCopyScores.push({ name: lib.card.name, cardId: lib.cardId, scores, fused: lib.fused1 });
   }
 
-  // Calculate score = sum of (library × deck) pairs with CR on library copies
-  let score = 0;
-  const pairs: Array<{ a: string; b: string; result: string; resultRarity: number; ba: number; bd: number; contribution: number }> = [];
-  let fusedCount = 0;
-  for (const it of deck.items) { if (it.fused1 || it.fused2 || it.fused3) fusedCount++; }
-  const deckCardName = new Map(deck.items.map((it) => [it.cardId, it.card.name]));
-  const libCardName = new Map(library.map((l) => [l.cardId, l.card.name]));
-
-  for (let li = 0; li < libraryInstances.length; li++) {
-    const libInst = libraryInstances[li];
-    const libCr = Math.pow(cr, libCopyIndices[li]);
-    let rowScore = 0;
-    for (let di = 0; di < deckInstances.length; di++) {
-      const deckInst = deckInstances[di];
-      const aBase = store.getBaseCardId(libInst.cardId);
-      const bBase = store.getBaseCardId(deckInst.cardId);
-      const [lo, hi] = aBase < bBase ? [aBase, bBase] : [bBase, aBase];
-      const combo = comboMap.get(`${lo}_${hi}`);
-      if (!combo) continue;
-      const raw = pairScore(combo, libInst.onyx, deckInst.onyx, libInst.level, deckInst.level, mode, fusionBuff);
-      rowScore += raw;
-    }
-    const contribution = Math.round(rowScore * libCr);
-    score += contribution;
-    // Show top pairs (library card → its total contribution)
-    if (pairs.length < 50) {
-      pairs.push({
-        a: libCardName.get(libInst.cardId) ?? '',
-        b: '(deck)',
-        result: `${libCopyIndices[li] > 0 ? '#' + (libCopyIndices[li] + 1) + ' ' : ''}contribution`,
-        resultRarity: 0,
-        ba: 0, bd: 0,
-        contribution,
-      });
+  // Flatten and sort all copy scores descending
+  const flatScores: Array<{ name: string; cardId: number; score: number; copyIdx: number }> = [];
+  for (const { name, cardId, scores } of allCopyScores) {
+    for (let i = 0; i < scores.length; i++) {
+      if (scores[i] > 0) {
+        flatScores.push({ name, cardId, score: scores[i], copyIdx: i });
+      }
     }
   }
-  pairs.sort((a, b) => b.contribution - a.contribution);
+  flatScores.sort((a, b) => b.score - a.score);
+
+  // Total score = sum of top 30 copy scores (matching deck size)
+  const topScores = flatScores.slice(0, DECK_MAX_SIZE);
+  const score = topScores.reduce((sum, s) => sum + s.score, 0);
+
+  // Build pairs display (top contributing library cards)
+  const pairs = topScores.map((s) => ({
+    a: s.name + (s.copyIdx > 0 ? ` #${s.copyIdx + 1}` : ''),
+    b: '(deck)',
+    result: 'contribution',
+    resultRarity: 0,
+    ba: 0, bd: 0,
+    contribution: s.score,
+  }));
 
   const rarityCounts: Record<string, number> = {};
   for (const it of deck.items) { rarityCounts[it.card.rarity] = (rarityCounts[it.card.rarity] ?? 0) + it.quantity; }
 
-  // Suggestions: library cards NOT in the deck, ranked by marginal gain
+  let fusedCount = 0;
+  for (const it of deck.items) { if (it.fused1 || it.fused2 || it.fused3) fusedCount++; }
+
+  // Suggestions: library cards NOT in the deck, ranked by their copy score
   const deckCardIds = new Set(deck.items.map((it) => it.cardId));
   const suggestions: Array<{ cardId: number; name: string; rarity: string; level: number; fused: boolean; gain: number }> = [];
   for (const lib of library) {
     if (deckCardIds.has(lib.cardId)) continue;
-    const libInsts = expandItemWithMeta(lib);
-    let gain = 0;
-    for (const libInst of libInsts) {
-      for (const d of deckInstances) {
-        const aBase = store.getBaseCardId(libInst.cardId);
-        const bBase = store.getBaseCardId(d.cardId);
-        const [lo, hi] = aBase < bBase ? [aBase, bBase] : [bBase, aBase];
-        const combo = comboMap.get(`${lo}_${hi}`);
-        if (!combo) continue;
-        gain += pairScore(combo, libInst.onyx, d.onyx, libInst.level, d.level, mode, fusionBuff);
-      }
-    }
-    if (gain > 0) {
-      suggestions.push({ cardId: lib.cardId, name: lib.card.name, rarity: lib.card.rarity, level: lib.level, fused: lib.fused1, gain });
+    const libInstance = expandItemWithMeta(lib)[0];
+    const scores = scoreLibraryCard(libInstance, deckInstances, comboMap, mode, params, fusionBuff, 1);
+    if (scores[0] > 0) {
+      suggestions.push({ cardId: lib.cardId, name: lib.card.name, rarity: lib.card.rarity, level: lib.level, fused: lib.fused1, gain: scores[0] });
     }
   }
   suggestions.sort((a, b) => b.gain - a.gain);
 
-  return { mode, score, deckSize: deckInstances.length, breakdown: { comboCount: pairs.length, fusedCount, rarityCounts }, pairs: pairs.slice(0, 50), suggestions: suggestions.slice(0, 30) };
+  return {
+    mode, score, deckSize: deckInstances.length,
+    breakdown: { comboCount: topScores.length, fusedCount, rarityCounts },
+    pairs: pairs.slice(0, 50),
+    suggestions: suggestions.slice(0, 30),
+  };
 }
 
 export async function autoFill(input: {
@@ -491,12 +479,15 @@ export async function autoFill(input: {
 
   const comboMap = store.getComboMap();
   const params = input.params ?? DEFAULT_SCORING_PARAMS;
-  // Library instances for scoring (library × deck pairs)
-  const libraryInstances = candidates; // same as candidates — all library card instances
+  // Build library items with quantities for scoring
+  const libraryItems = library.map((lib) => ({
+    instance: expandItemWithMeta(lib)[0],
+    quantity: lib.quantity,
+  }));
   let result;
-  if (input.algorithm === 'quick') result = quickFill(start, pool, comboMap, input.mode, DECK_MAX_SIZE, params, libraryInstances);
-  else if (input.algorithm === 'advanced') result = advancedFill(start, pool, comboMap, input.mode, DECK_MAX_SIZE, 6, params, libraryInstances);
-  else result = tryAllFill(pool, comboMap, input.mode, DECK_MAX_SIZE, params, libraryInstances);
+  if (input.algorithm === 'quick') result = quickFill(start, pool, comboMap, input.mode, DECK_MAX_SIZE, params, libraryItems);
+  else if (input.algorithm === 'advanced') result = advancedFill(start, pool, comboMap, input.mode, DECK_MAX_SIZE, 6, params, libraryItems);
+  else result = tryAllFill(pool, comboMap, input.mode, DECK_MAX_SIZE, params, libraryItems);
 
   const collapsed = collapseInstances(result.instances);
   collapsed.sort((a, b) => a.cardId - b.cardId);

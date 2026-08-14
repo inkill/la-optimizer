@@ -60,16 +60,20 @@ export function OptimizerTab() {
   // Scoring parameters — configurable by the user
   const [copyReduction, setCopyReduction] = useState(DEFAULT_SCORING_PARAMS.copyReduction);
   const [fusionBuffOverride, setFusionBuffOverride] = useState<number | null>(null);
+  const [lcwc, setLcwc] = useState(DEFAULT_SCORING_PARAMS.lcwc);
+  const [sv, setSv] = useState(DEFAULT_SCORING_PARAMS.sv);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const params: ScoringParams = useMemo(() => ({
     copyReduction,
     fusionBuffOverride,
-  }), [copyReduction, fusionBuffOverride]);
+    lcwc,
+    sv,
+  }), [copyReduction, fusionBuffOverride, lcwc, sv]);
 
   const { data: deckData } = useQuery({ queryKey: ['deck'], queryFn: fetchActiveDeck });
   const { data, isLoading } = useQuery({
-    queryKey: ['optimize', mode, copyReduction, fusionBuffOverride],
+    queryKey: ['optimize', mode, copyReduction, fusionBuffOverride, lcwc, sv],
     queryFn: () => fetchOptimize(mode, params),
   });
 
@@ -268,6 +272,30 @@ export function OptimizerTab() {
                     Override manually
                   </Button>
                 )}
+              </div>
+
+              {/* LCwC and SV */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Lowest Combo (LCwC)</Label>
+                  <p className="text-xs text-muted-foreground">Min pair score to count</p>
+                  <Input
+                    type="number"
+                    value={lcwc}
+                    onChange={(e) => setLcwc(parseInt(e.target.value) || 42)}
+                    className="h-8 w-20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Step Value (SV)</Label>
+                  <p className="text-xs text-muted-foreground">Threshold increment</p>
+                  <Input
+                    type="number"
+                    value={sv}
+                    onChange={(e) => setSv(parseInt(e.target.value) || 2)}
+                    className="h-8 w-20"
+                  />
+                </div>
               </div>
             </div>
           )}

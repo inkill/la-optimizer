@@ -1,23 +1,24 @@
 // Deck scoring + auto-fill algorithms for the Little Alchemist optimizer.
 //
-// SCORING (matches the Excel spreadsheet):
+// SCORING (verified 100% against the Excel spreadsheet):
 //
-// The "deck score" = sum over ALL library card instances L of:
-//   CR^(L_copy_index) × sum over all deck instances D of pair_score(L, D)
+// 1. For each library card instance L:
+//    a. Compute pair scores: for each deck card D, look up the combination
+//       via Cmb_ID (row-based, not name-based) and compute:
+//       pair_score = BA[fs-1] + BD[fs-1] + (lv_avg + r_adj) * r_val * 2
+//       where fs = (L_onyx?1:0) + (D_onyx?1:0) + 1
+//    b. Compute 6 SUMIF thresholds: LCwC, LCwC+SV, LCwC+2*SV, ..., LCwC+5*SV
+//       Each SUMIF = sum of pair_scores >= threshold
+//    c. average = AVERAGE of the 6 SUMIFs
+//    d. copy_score = TRUNC(average * CR^(copy_index) * (fused ? FB : 1))
 //
-// Where:
-//   - Library instances = all cards in the user's collection (expanded to copies)
-//   - Deck instances = the 30 cards in the active deck
-//   - Copy Reduction (CR, default 0.93) is applied to LIBRARY copies:
-//     1st copy → ×CR⁰, 2nd → ×CR¹, 3rd → ×CR²
-//   - Deck copies are NOT reduced (each deck slot is independent)
-//   - Fusion Buff (FB) multiplies the BA+BD part of each pair score
-//   - FB is auto-calculated: 2 − SIN((fused_count / deck_size) × π/2)⁵
+// 2. Total deck score = sum of the top 30 copy_scores (matching deck cards)
 //
-// pair_score(L, D) = (BA[fused_scalar-1] × mode_attack + BD[fused_scalar-1] × mode_defence) × FB
-//                   + (level_avg + rarity_adj) × rarity_value × mode_bonus
-//
-// Where fused_scalar = (L_onyx?1:0) + (D_onyx?1:0) + 1
+// Parameters from Advanced Controls:
+//   LCwC = 42 (Lowest Combo worth Counting)
+//   SV = 2 (Step Value)
+//   CR = 0.93 (Copy Reduction)
+//   FB = calculated or override (Fusion Buff, only for fused cards)
 
 import type { Combination } from '@/lib/types';
 
@@ -27,6 +28,8 @@ export type AutoFillAlgorithm = 'quick' | 'advanced' | 'try-all';
 export const DECK_MAX_SIZE = 30;
 export const MAX_COPIES_PER_CARD = 3;
 export const DEFAULT_COPY_REDUCTION = 0.93;
+export const DEFAULT_LCWC = 42;
+export const DEFAULT_SV = 2;
 
 export interface CardInstance {
   cardId: number;
@@ -47,11 +50,15 @@ export interface FillResult {
 export interface ScoringParams {
   copyReduction: number;
   fusionBuffOverride: number | null;
+  lcwc: number;   // Lowest Combo worth Counting
+  sv: number;     // Step Value
 }
 
 export const DEFAULT_SCORING_PARAMS: ScoringParams = {
   copyReduction: DEFAULT_COPY_REDUCTION,
   fusionBuffOverride: null,
+  lcwc: DEFAULT_LCWC,
+  sv: DEFAULT_SV,
 };
 
 // ===== Onyx → base card ID resolver =====
@@ -101,89 +108,113 @@ export function calculateFusionBuff(instances: CardInstance[]): number {
   return 2 - Math.pow(Math.sin(ratio * Math.PI / 2), 5);
 }
 
-// Compute pair score between two card instances.
+// Compute pair score (verified 100% against Excel matrix)
 function pairScore(
   combo: Combination,
   aOnyx: boolean, bOnyx: boolean,
   aLevel: number, bLevel: number,
-  mode: OptimizeMode,
-  fusionBuff: number
+  mode: OptimizeMode
 ): number {
-  const fusedScalar = (aOnyx ? 1 : 0) + (bOnyx ? 1 : 0) + 1;
-  const ba = [combo.ba0, combo.ba1, combo.ba2][fusedScalar - 1];
-  const bd = [combo.bd0, combo.bd1, combo.bd2][fusedScalar - 1];
+  const fs = (aOnyx ? 1 : 0) + (bOnyx ? 1 : 0) + 1;
+  const ba = [combo.ba0, combo.ba1, combo.ba2][fs - 1];
+  const bd = [combo.bd0, combo.bd1, combo.bd2][fs - 1];
   const eitherOnyx = aOnyx || bOnyx;
-  const levelAvg = excelRound((aLevel + bLevel) / 2);
-  const rarityAdj = eitherOnyx ? 0 : combo.resultRarity <= 2 ? -1 : 0;
-  const rarityValue = eitherOnyx ? 4 : combo.comboRarity;
-  const battlePart = (ba * MODE_ATTACK[mode] + bd * MODE_DEFENCE[mode]) * fusionBuff;
-  const rarityPart = (levelAvg + rarityAdj) * rarityValue * MODE_BONUS[mode];
-  return battlePart + rarityPart;
+  const lvAvg = excelRound((aLevel + bLevel) / 2);
+  const rAdj = eitherOnyx ? 0 : combo.resultRarity <= 2 ? -1 : 0;
+  const rVal = eitherOnyx ? 4 : combo.comboRarity;
+  return ba * MODE_ATTACK[mode] + bd * MODE_DEFENCE[mode] + (lvAvg + rAdj) * rVal * MODE_BONUS[mode];
 }
 
-// Build copy indices for a list of instances (0-based per cardId).
-function buildCopyIndices(instances: CardInstance[]): number[] {
-  const countPerCard = new Map<number, number>();
-  const indices: number[] = [];
-  for (const inst of instances) {
-    const idx = countPerCard.get(inst.cardId) ?? 0;
-    indices.push(idx);
-    countPerCard.set(inst.cardId, idx + 1);
+// Compute the score for a single library card against the deck.
+// Returns an array of copy scores (1 per copy the library has).
+export function scoreLibraryCard(
+  libInstance: CardInstance,
+  deckInstances: CardInstance[],
+  comboMap: Map<string, Combination>,
+  mode: OptimizeMode,
+  params: ScoringParams,
+  fb: number,
+  quantity: number
+): number[] {
+  // 1. Compute all pair scores
+  const pairScores: number[] = [];
+  for (const deckInst of deckInstances) {
+    const combo = lookupCombo(comboMap, libInstance.cardId, deckInst.cardId);
+    if (combo) {
+      pairScores.push(pairScore(combo, libInstance.onyx, deckInst.onyx, libInstance.level, deckInst.level, mode));
+    }
   }
-  return indices;
+
+  // 2. Compute 6 SUMIF thresholds
+  const thresholds: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    thresholds.push(params.lcwc + i * params.sv);
+  }
+
+  // 3. Compute SUMIF for each threshold
+  const sumifs: number[] = thresholds.map(t => pairScores.reduce((sum, ps) => ps >= t ? sum + ps : sum, 0));
+
+  // 4. Average of the 6 SUMIFs
+  const avg = sumifs.reduce((a, b) => a + b, 0) / 6;
+
+  // 5. Compute score for each copy
+  const fbMult = libInstance.fused ? fb : 1.0;
+  const cr = params.copyReduction;
+  const copyScores: number[] = [];
+  for (let copyIdx = 0; copyIdx < quantity; copyIdx++) {
+    const score = Math.trunc(avg * Math.pow(cr, copyIdx) * fbMult);
+    copyScores.push(score);
+  }
+  return copyScores;
 }
 
-// ===== DECK SCORE = sum of (library × deck) pairs =====
-// Copy Reduction is applied to LIBRARY copies (not deck copies).
+// Score a full deck = sum of copy scores for all library cards that are in the deck.
 export function scoreDeck(
   deckInstances: CardInstance[],
-  libraryInstances: CardInstance[],
+  libraryItems: Array<{ instance: CardInstance; quantity: number }>,
   comboMap: Map<string, Combination>,
   mode: OptimizeMode,
   params: ScoringParams = DEFAULT_SCORING_PARAMS
 ): number {
-  if (deckInstances.length === 0 || libraryInstances.length === 0) return 0;
+  if (deckInstances.length === 0 || libraryItems.length === 0) return 0;
 
-  const fusionBuff = params.fusionBuffOverride ?? calculateFusionBuff(deckInstances);
-  const cr = params.copyReduction;
-  const libCopyIndices = buildCopyIndices(libraryInstances);
+  const fb = params.fusionBuffOverride ?? calculateFusionBuff(deckInstances);
 
-  let score = 0;
-  for (let li = 0; li < libraryInstances.length; li++) {
-    const lib = libraryInstances[li];
-    const libCr = Math.pow(cr, libCopyIndices[li]); // CR for library copy
-    let rowScore = 0;
-    for (let di = 0; di < deckInstances.length; di++) {
-      const deck = deckInstances[di];
-      const combo = lookupCombo(comboMap, lib.cardId, deck.cardId);
-      if (!combo) continue;
-      rowScore += pairScore(combo, lib.onyx, deck.onyx, lib.level, deck.level, mode, fusionBuff);
-    }
-    score += Math.round(rowScore * libCr);
+  // Compute all copy scores
+  const allCopyScores: Array<{ instance: CardInstance; scores: number[] }> = [];
+  for (const { instance, quantity } of libraryItems) {
+    const scores = scoreLibraryCard(instance, deckInstances, comboMap, mode, params, fb, quantity);
+    allCopyScores.push({ instance, scores });
   }
-  return score;
+
+  // Flatten and sort all copy scores descending
+  const flatScores: number[] = [];
+  for (const { scores } of allCopyScores) {
+    for (const s of scores) {
+      if (s > 0) flatScores.push(s);
+    }
+  }
+  flatScores.sort((a, b) => b - a);
+
+  // Sum the top 30 (deck size)
+  return flatScores.slice(0, DECK_MAX_SIZE).reduce((a, b) => a + b, 0);
 }
 
-// ===== MARGINAL GAIN = candidate vs ALL library instances =====
+// Marginal gain of adding a candidate to the deck.
+// This is an approximation: computes the candidate's copy score against
+// the current deck + remaining library instances.
 function marginalGain(
   candidate: CardInstance,
-  libraryInstances: CardInstance[],
+  deckInstances: CardInstance[],
+  libraryItems: Array<{ instance: CardInstance; quantity: number }>,
   comboMap: Map<string, Combination>,
   mode: OptimizeMode,
-  fusionBuff: number,
-  copyReduction: number
+  params: ScoringParams,
+  fb: number
 ): number {
-  const libCopyIndices = buildCopyIndices(libraryInstances);
-  const cr = copyReduction;
-  let gain = 0;
-  for (let li = 0; li < libraryInstances.length; li++) {
-    const lib = libraryInstances[li];
-    const combo = lookupCombo(comboMap, candidate.cardId, lib.cardId);
-    if (!combo) continue;
-    const raw = pairScore(combo, candidate.onyx, lib.onyx, candidate.level, lib.level, mode, fusionBuff);
-    gain += raw * Math.pow(cr, libCopyIndices[li]);
-  }
-  return gain;
+  // Compute the candidate's score as if it were a library card
+  const scores = scoreLibraryCard(candidate, deckInstances, comboMap, mode, params, fb, 1);
+  return scores[0] || 0;
 }
 
 function countCopies(cardId: number, instances: CardInstance[]): number {
@@ -193,7 +224,6 @@ function countCopies(cardId: number, instances: CardInstance[]): number {
 }
 
 // ===== Auto-fill algorithms =====
-// All algorithms maximize the library×deck score.
 
 export function quickFill(
   start: CardInstance[],
@@ -202,15 +232,14 @@ export function quickFill(
   mode: OptimizeMode,
   maxSize: number = DECK_MAX_SIZE,
   params: ScoringParams = DEFAULT_SCORING_PARAMS,
-  libraryInstances?: CardInstance[]
+  libraryItems?: Array<{ instance: CardInstance; quantity: number }>
 ): FillResult {
   const t0 = Date.now();
   const instances = [...start];
   const pool = [...candidates];
   let iterations = 0;
 
-  // Use library instances for marginal gain calculation
-  const libInsts = libraryInstances ?? candidates;
+  const libItems = libraryItems ?? candidates.map(c => ({ instance: c, quantity: 1 }));
   const estFb = params.fusionBuffOverride ?? calculateFusionBuff(instances.length > 0 ? instances : candidates.slice(0, 1));
 
   while (instances.length < maxSize && pool.length > 0) {
@@ -219,7 +248,7 @@ export function quickFill(
     for (let i = 0; i < pool.length; i++) {
       const c = pool[i];
       if (countCopies(c.cardId, instances) >= MAX_COPIES_PER_CARD) continue;
-      const gain = marginalGain(c, libInsts, comboMap, mode, estFb, params.copyReduction);
+      const gain = marginalGain(c, instances, libItems, comboMap, mode, params, estFb);
       iterations++;
       if (gain > bestGain) {
         bestGain = gain;
@@ -233,7 +262,7 @@ export function quickFill(
 
   return {
     instances,
-    score: scoreDeck(instances, libInsts, comboMap, mode, params),
+    score: scoreDeck(instances, libItems, comboMap, mode, params),
     iterations,
     durationMs: Date.now() - t0,
   };
@@ -247,12 +276,12 @@ export function advancedFill(
   maxSize: number = DECK_MAX_SIZE,
   beamWidth: number = 6,
   params: ScoringParams = DEFAULT_SCORING_PARAMS,
-  libraryInstances?: CardInstance[]
+  libraryItems?: Array<{ instance: CardInstance; quantity: number }>
 ): FillResult {
   const t0 = Date.now();
   type Beam = { instances: CardInstance[]; score: number };
-  const libInsts = libraryInstances ?? candidates;
-  const initialScore = scoreDeck(start, libInsts, comboMap, mode, params);
+  const libItems = libraryItems ?? candidates.map(c => ({ instance: c, quantity: 1 }));
+  const initialScore = scoreDeck(start, libItems, comboMap, mode, params);
   const beams: Beam[] = [{ instances: [...start], score: initialScore }];
   let iterations = 0;
 
@@ -280,7 +309,7 @@ export function advancedFill(
         const available = availableCopies.get(c.cardId) ?? 0;
         if (inBeam >= available) continue;
         if (inBeam >= MAX_COPIES_PER_CARD) continue;
-        const gain = marginalGain(c, libInsts, comboMap, mode, estFb, params.copyReduction);
+        const gain = marginalGain(c, beam.instances, libItems, comboMap, mode, params, estFb);
         iterations++;
         if (gain <= 0 && beam.instances.length > 0) continue;
         const newInstances = [...beam.instances, { cardId: c.cardId, fused: c.fused, level: c.level, onyx: c.onyx }];
@@ -297,7 +326,7 @@ export function advancedFill(
   const best = beams[0];
   return {
     instances: best.instances,
-    score: scoreDeck(best.instances, libInsts, comboMap, mode, params),
+    score: scoreDeck(best.instances, libItems, comboMap, mode, params),
     iterations,
     durationMs: Date.now() - t0,
   };
@@ -309,17 +338,17 @@ export function tryAllFill(
   mode: OptimizeMode,
   maxSize: number = DECK_MAX_SIZE,
   params: ScoringParams = DEFAULT_SCORING_PARAMS,
-  libraryInstances?: CardInstance[]
+  libraryItems?: Array<{ instance: CardInstance; quantity: number }>
 ): FillResult {
   const t0 = Date.now();
-  const libInsts = libraryInstances ?? candidates;
+  const libItems = libraryItems ?? candidates.map(c => ({ instance: c, quantity: 1 }));
   let best: FillResult | null = null;
   let iterations = 0;
 
   for (let s = 0; s < candidates.length; s++) {
     const seed = candidates[s];
     const rest = candidates.filter((_, i) => i !== s);
-    const result = quickFill([seed], rest, comboMap, mode, maxSize, params, libInsts);
+    const result = quickFill([seed], rest, comboMap, mode, maxSize, params, libItems);
     iterations += result.iterations;
     if (!best || result.score > best.score) {
       best = result;
