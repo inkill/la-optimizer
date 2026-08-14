@@ -22,14 +22,14 @@
 
 import type { Combination } from '@/lib/types';
 
-export type OptimizeMode = 'sum' | 'attack' | 'defence' | 'heroics';
+export type OptimizeMode = 'sum' | 'attack' | 'defence';
 export type AutoFillAlgorithm = 'quick' | 'advanced' | 'try-all';
 
 export const DECK_MAX_SIZE = 30;
 export const MAX_COPIES_PER_CARD = 3;
 export const DEFAULT_COPY_REDUCTION = 0.93;
-export const DEFAULT_LCWC = 42;
-export const DEFAULT_SV = 2;
+export const DEFAULT_LCWC = 0;  // 0 = auto-calculate from pair scores
+export const DEFAULT_SV = 0;
 
 export interface CardInstance {
   cardId: number;
@@ -96,9 +96,9 @@ function excelRound(x: number): number {
   return Math.floor(x + 0.5);
 }
 
-const MODE_ATTACK: Record<OptimizeMode, number> = { sum: 1, attack: 1, defence: 0, heroics: 1.5 };
-const MODE_DEFENCE: Record<OptimizeMode, number> = { sum: 1, attack: 0, defence: 1, heroics: 0.5 };
-const MODE_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1, heroics: 2 };
+const MODE_ATTACK: Record<OptimizeMode, number> = { sum: 1, attack: 1, defence: 0 };
+const MODE_DEFENCE: Record<OptimizeMode, number> = { sum: 1, attack: 0, defence: 1 };
+const MODE_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1 };
 
 // ===== Fusion Buff =====
 export function calculateFusionBuff(instances: CardInstance[]): number {
@@ -145,10 +145,32 @@ export function scoreLibraryCard(
     }
   }
 
-  // 2. Compute 6 SUMIF thresholds
+  // 2. Determine LCwC: if 0, auto-calculate from pair scores
+  // Excel formula: TRUNC(AVERAGE(AVERAGE(scores), MEDIAN(scores), MODE(scores)*0.9))
+  // Simplified: use AVERAGE * 0.8 as threshold
+  let lcwc = params.lcwc;
+  let sv = params.sv;
+  if (lcwc === 0 && pairScores.length > 0) {
+    const sorted = [...pairScores].sort((a, b) => a - b);
+    const avg = pairScores.reduce((a, b) => a + b, 0) / pairScores.length;
+    const median = sorted[Math.floor(sorted.length / 2)];
+    // Approximate MODE: most common value (rounded to nearest 5)
+    const rounded = pairScores.map(s => Math.round(s / 5) * 5);
+    const counts = new Map<number, number>();
+    for (const r of rounded) counts.set(r, (counts.get(r) ?? 0) + 1);
+    let modeVal = 30;
+    let maxCount = 0;
+    for (const [val, cnt] of counts) {
+      if (cnt > maxCount) { modeVal = val; maxCount = cnt; }
+    }
+    lcwc = Math.trunc((avg + median + modeVal * 0.9) / 3);
+    if (sv === 0) sv = 2; // default step value when auto-calculating
+  }
+
+  // 3. Compute 6 SUMIF thresholds
   const thresholds: number[] = [];
   for (let i = 0; i < 6; i++) {
-    thresholds.push(params.lcwc + i * params.sv);
+    thresholds.push(lcwc + i * sv);
   }
 
   // 3. Compute SUMIF for each threshold

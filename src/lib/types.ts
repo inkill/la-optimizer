@@ -1,6 +1,6 @@
 // Shared TypeScript types for the Little Alchemist app.
 
-export type Rarity = 'Bronze' | 'Silver' | 'Gold' | 'Onyx';
+export type Rarity = 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
 
 export interface Card {
   id: number;
@@ -62,7 +62,7 @@ export interface Deck {
 }
 
 export interface OptimizeResult {
-  mode: 'sum' | 'attack' | 'defence' | 'heroics';
+  mode: 'sum' | 'attack' | 'defence';
   score: number;
   deckSize: number;
   breakdown: {
@@ -81,7 +81,7 @@ export interface OptimizeResult {
 
 export interface AutoFillResult {
   algorithm: 'quick' | 'advanced' | 'try-all';
-  mode: 'sum' | 'attack' | 'defence' | 'heroics';
+  mode: 'sum' | 'attack' | 'defence';
   score: number;
   iterations: number;
   durationMs: number;

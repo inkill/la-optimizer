@@ -19,14 +19,13 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { AutoFillResult } from '@/lib/types';
 
-type Mode = 'sum' | 'attack' | 'defence' | 'heroics';
+type Mode = 'sum' | 'attack' | 'defence';
 type Algo = 'quick' | 'advanced' | 'try-all';
 
 const MODES: Array<{ value: Mode; label: string; icon: React.ReactNode; desc: string }> = [
   { value: 'sum', label: 'Sum', icon: <Gauge className="h-4 w-4" />, desc: 'Balanced attack + defence' },
-  { value: 'attack', label: 'Attack', icon: <Swords className="h-4 w-4" />, desc: '×1.5 attack, ×0.5 defence' },
-  { value: 'defence', label: 'Defence', icon: <Shield className="h-4 w-4" />, desc: '×0.5 attack, ×1.5 defence' },
-  { value: 'heroics', label: 'Heroics', icon: <Zap className="h-4 w-4" />, desc: 'Same as attack mode' },
+  { value: 'attack', label: 'Attack', icon: <Swords className="h-4 w-4" />, desc: 'Attack only (BD=0)' },
+  { value: 'defence', label: 'Defence', icon: <Shield className="h-4 w-4" />, desc: 'Defence only (BA=0)' },
 ];
 
 const ALGOS: Array<{
@@ -123,7 +122,7 @@ export function OptimizerTab() {
       {/* Mode selector */}
       <div>
         <div className="mb-2 text-sm font-medium">Scoring Mode</div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2">
           {MODES.map((m) => (
             <button
               key={m.value}
@@ -278,21 +277,21 @@ export function OptimizerTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Lowest Combo (LCwC)</Label>
-                  <p className="text-xs text-muted-foreground">Min pair score to count</p>
+                  <p className="text-xs text-muted-foreground">0 = auto-calculate from pair scores</p>
                   <Input
                     type="number"
                     value={lcwc}
-                    onChange={(e) => setLcwc(parseInt(e.target.value) || 42)}
+                    onChange={(e) => setLcwc(parseInt(e.target.value) || 0)}
                     className="h-8 w-20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Step Value (SV)</Label>
-                  <p className="text-xs text-muted-foreground">Threshold increment</p>
+                  <p className="text-xs text-muted-foreground">0 = auto (default 2)</p>
                   <Input
                     type="number"
                     value={sv}
-                    onChange={(e) => setSv(parseInt(e.target.value) || 2)}
+                    onChange={(e) => setSv(parseInt(e.target.value) || 0)}
                     className="h-8 w-20"
                   />
                 </div>

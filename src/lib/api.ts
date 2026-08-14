@@ -336,9 +336,9 @@ export async function clearActiveDeck() {
 //         + (level_avg + rarity_adj) × rarity_value × mode_bonus
 
 // Mode multipliers (same as optimizer.ts)
-const M_ATTACK: Record<OptimizeMode, number> = { sum: 1, attack: 1, defence: 0, heroics: 1.5 };
-const M_DEFENCE: Record<OptimizeMode, number> = { sum: 1, attack: 0, defence: 1, heroics: 0.5 };
-const M_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1, heroics: 2 };
+const M_ATTACK: Record<OptimizeMode, number> = { sum: 1, attack: 1, defence: 0 };
+const M_DEFENCE: Record<OptimizeMode, number> = { sum: 1, attack: 0, defence: 1 };
+const M_BONUS: Record<OptimizeMode, number> = { sum: 2, attack: 1, defence: 1 };
 
 function excelRound(x: number): number { return Math.floor(x + 0.5); }
 
