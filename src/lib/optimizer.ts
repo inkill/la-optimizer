@@ -125,6 +125,46 @@ function pairScore(
   return ba * MODE_ATTACK[mode] + bd * MODE_DEFENCE[mode] + (lvAvg + rAdj) * rVal * MODE_BONUS[mode];
 }
 
+// Compute ALL pair scores across all library × deck combinations.
+// Used for global LCwC calculation.
+export function computeAllPairScores(
+  libraryItems: Array<{ instance: CardInstance; quantity: number }>,
+  deckInstances: CardInstance[],
+  comboMap: Map<string, Combination>,
+  mode: OptimizeMode
+): number[] {
+  const allScores: number[] = [];
+  for (const { instance } of libraryItems) {
+    for (const deckInst of deckInstances) {
+      const combo = lookupCombo(comboMap, instance.cardId, deckInst.cardId);
+      if (combo) {
+        allScores.push(pairScore(combo, instance.onyx, deckInst.onyx, instance.level, deckInst.level, mode));
+      }
+    }
+  }
+  return allScores;
+}
+
+// Calculate global LCwC from all pair scores.
+// Excel formula: TRUNC(AVERAGE(AVERAGE(scores), MEDIAN(scores), MODE(scores)*0.9))
+export function calculateLcwc(allPairScores: number[]): { lcwc: number; sv: number } {
+  if (allPairScores.length === 0) return { lcwc: 30, sv: 2 };
+  const sorted = [...allPairScores].sort((a, b) => a - b);
+  const avg = allPairScores.reduce((a, b) => a + b, 0) / allPairScores.length;
+  const median = sorted[Math.floor(sorted.length / 2)];
+  // Approximate MODE: most common value (rounded to nearest 5)
+  const rounded = allPairScores.map(s => Math.round(s / 5) * 5);
+  const counts = new Map<number, number>();
+  for (const r of rounded) counts.set(r, (counts.get(r) ?? 0) + 1);
+  let modeVal = 30;
+  let maxCount = 0;
+  for (const [val, cnt] of counts) {
+    if (cnt > maxCount) { modeVal = val; maxCount = cnt; }
+  }
+  const lcwc = Math.trunc((avg + median + modeVal * 0.9) / 3);
+  return { lcwc, sv: 2 };
+}
+
 // Compute the score for a single library card against the deck.
 // Returns an array of copy scores (1 per copy the library has).
 export function scoreLibraryCard(
@@ -134,7 +174,9 @@ export function scoreLibraryCard(
   mode: OptimizeMode,
   params: ScoringParams,
   fb: number,
-  quantity: number
+  quantity: number,
+  globalLcwc: number,
+  globalSv: number
 ): number[] {
   // 1. Compute all pair scores
   const pairScores: number[] = [];
@@ -145,27 +187,9 @@ export function scoreLibraryCard(
     }
   }
 
-  // 2. Determine LCwC: if 0, auto-calculate from pair scores
-  // Excel formula: TRUNC(AVERAGE(AVERAGE(scores), MEDIAN(scores), MODE(scores)*0.9))
-  // Simplified: use AVERAGE * 0.8 as threshold
-  let lcwc = params.lcwc;
-  let sv = params.sv;
-  if (lcwc === 0 && pairScores.length > 0) {
-    const sorted = [...pairScores].sort((a, b) => a - b);
-    const avg = pairScores.reduce((a, b) => a + b, 0) / pairScores.length;
-    const median = sorted[Math.floor(sorted.length / 2)];
-    // Approximate MODE: most common value (rounded to nearest 5)
-    const rounded = pairScores.map(s => Math.round(s / 5) * 5);
-    const counts = new Map<number, number>();
-    for (const r of rounded) counts.set(r, (counts.get(r) ?? 0) + 1);
-    let modeVal = 30;
-    let maxCount = 0;
-    for (const [val, cnt] of counts) {
-      if (cnt > maxCount) { modeVal = val; maxCount = cnt; }
-    }
-    lcwc = Math.trunc((avg + median + modeVal * 0.9) / 3);
-    if (sv === 0) sv = 2; // default step value when auto-calculating
-  }
+  // 2. Use global LCwC (auto-calculated or user-specified)
+  const lcwc = globalLcwc;
+  const sv = globalSv;
 
   // 3. Compute 6 SUMIF thresholds
   const thresholds: number[] = [];
@@ -202,10 +226,21 @@ export function scoreDeck(
 
   const fb = params.fusionBuffOverride ?? calculateFusionBuff(deckInstances);
 
+  // Calculate global LCwC from ALL library × deck pair scores
+  let globalLcwc = params.lcwc;
+  let globalSv = params.sv;
+  if (globalLcwc === 0) {
+    const allPairScores = computeAllPairScores(libraryItems, deckInstances, comboMap, mode);
+    const calc = calculateLcwc(allPairScores);
+    globalLcwc = calc.lcwc;
+    globalSv = calc.sv;
+  }
+  if (globalSv === 0) globalSv = 2;
+
   // Compute all copy scores
   const allCopyScores: Array<{ instance: CardInstance; scores: number[] }> = [];
   for (const { instance, quantity } of libraryItems) {
-    const scores = scoreLibraryCard(instance, deckInstances, comboMap, mode, params, fb, quantity);
+    const scores = scoreLibraryCard(instance, deckInstances, comboMap, mode, params, fb, quantity, globalLcwc, globalSv);
     allCopyScores.push({ instance, scores });
   }
 
@@ -232,10 +267,12 @@ function marginalGain(
   comboMap: Map<string, Combination>,
   mode: OptimizeMode,
   params: ScoringParams,
-  fb: number
+  fb: number,
+  globalLcwc: number,
+  globalSv: number
 ): number {
   // Compute the candidate's score as if it were a library card
-  const scores = scoreLibraryCard(candidate, deckInstances, comboMap, mode, params, fb, 1);
+  const scores = scoreLibraryCard(candidate, deckInstances, comboMap, mode, params, fb, 1, globalLcwc, globalSv);
   return scores[0] || 0;
 }
 
@@ -264,13 +301,24 @@ export function quickFill(
   const libItems = libraryItems ?? candidates.map(c => ({ instance: c, quantity: 1 }));
   const estFb = params.fusionBuffOverride ?? calculateFusionBuff(instances.length > 0 ? instances : candidates.slice(0, 1));
 
+  // Calculate global LCwC once for the initial deck + library
+  let globalLcwc = params.lcwc;
+  let globalSv = params.sv;
+  if (globalLcwc === 0 && instances.length > 0) {
+    const allPairScores = computeAllPairScores(libItems, instances, comboMap, mode);
+    const calc = calculateLcwc(allPairScores);
+    globalLcwc = calc.lcwc;
+    globalSv = calc.sv;
+  }
+  if (globalSv === 0) globalSv = 2;
+
   while (instances.length < maxSize && pool.length > 0) {
     let bestIdx = -1;
     let bestGain = -Infinity;
     for (let i = 0; i < pool.length; i++) {
       const c = pool[i];
       if (countCopies(c.cardId, instances) >= MAX_COPIES_PER_CARD) continue;
-      const gain = marginalGain(c, instances, libItems, comboMap, mode, params, estFb);
+      const gain = marginalGain(c, instances, libItems, comboMap, mode, params, estFb, globalLcwc, globalSv);
       iterations++;
       if (gain > bestGain) {
         bestGain = gain;
@@ -317,6 +365,17 @@ export function advancedFill(
 
   const estFb = params.fusionBuffOverride ?? calculateFusionBuff(start.length > 0 ? start : candidates.slice(0, 1));
 
+  // Calculate global LCwC
+  let globalLcwc = params.lcwc;
+  let globalSv = params.sv;
+  if (globalLcwc === 0 && start.length > 0) {
+    const allPairScores = computeAllPairScores(libItems, start, comboMap, mode);
+    const calc = calculateLcwc(allPairScores);
+    globalLcwc = calc.lcwc;
+    globalSv = calc.sv;
+  }
+  if (globalSv === 0) globalSv = 2;
+
   while (beams[0].instances.length < maxSize) {
     const expanded: Beam[] = [];
     for (const beam of beams) {
@@ -331,7 +390,7 @@ export function advancedFill(
         const available = availableCopies.get(c.cardId) ?? 0;
         if (inBeam >= available) continue;
         if (inBeam >= MAX_COPIES_PER_CARD) continue;
-        const gain = marginalGain(c, beam.instances, libItems, comboMap, mode, params, estFb);
+        const gain = marginalGain(c, beam.instances, libItems, comboMap, mode, params, estFb, globalLcwc, globalSv);
         iterations++;
         if (gain <= 0 && beam.instances.length > 0) continue;
         const newInstances = [...beam.instances, { cardId: c.cardId, fused: c.fused, level: c.level, onyx: c.onyx }];

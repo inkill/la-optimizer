@@ -30,6 +30,8 @@ import {
   scoreLibraryCard,
   calculateFusionBuff,
   setBaseIdResolver,
+  computeAllPairScores,
+  calculateLcwc,
   type OptimizeMode,
   type Candidate,
   type CardInstance,
@@ -384,11 +386,22 @@ export async function fetchOptimize(
   // Calculate Fusion Buff from the deck
   const fusionBuff = params.fusionBuffOverride ?? calculateFusionBuff(deckInstances);
 
+  // Calculate global LCwC from ALL library × deck pair scores
+  let globalLcwc = params.lcwc;
+  let globalSv = params.sv;
+  if (globalLcwc === 0) {
+    const allPairScores = computeAllPairScores(libraryItems, deckInstances, comboMap, mode);
+    const calc = calculateLcwc(allPairScores);
+    globalLcwc = calc.lcwc;
+    globalSv = calc.sv;
+  }
+  if (globalSv === 0) globalSv = 2;
+
   // Compute copy scores for all library cards
   const allCopyScores: Array<{ name: string; cardId: number; scores: number[]; fused: boolean }> = [];
   for (const lib of library) {
     const libInstance = expandItemWithMeta(lib)[0];
-    const scores = scoreLibraryCard(libInstance, deckInstances, comboMap, mode, params, fusionBuff, lib.quantity);
+    const scores = scoreLibraryCard(libInstance, deckInstances, comboMap, mode, params, fusionBuff, lib.quantity, globalLcwc, globalSv);
     allCopyScores.push({ name: lib.card.name, cardId: lib.cardId, scores, fused: lib.fused1 });
   }
 
@@ -421,7 +434,11 @@ export async function fetchOptimize(
   for (const it of deck.items) { rarityCounts[it.card.rarity] = (rarityCounts[it.card.rarity] ?? 0) + it.quantity; }
 
   let fusedCount = 0;
-  for (const it of deck.items) { if (it.fused1 || it.fused2 || it.fused3) fusedCount++; }
+  for (const it of deck.items) {
+    if (it.quantity >= 1 && it.fused1) fusedCount++;
+    if (it.quantity >= 2 && it.fused2) fusedCount++;
+    if (it.quantity >= 3 && it.fused3) fusedCount++;
+  }
 
   // Suggestions: library cards NOT in the deck, ranked by their copy score
   const deckCardIds = new Set(deck.items.map((it) => it.cardId));
@@ -429,7 +446,7 @@ export async function fetchOptimize(
   for (const lib of library) {
     if (deckCardIds.has(lib.cardId)) continue;
     const libInstance = expandItemWithMeta(lib)[0];
-    const scores = scoreLibraryCard(libInstance, deckInstances, comboMap, mode, params, fusionBuff, 1);
+    const scores = scoreLibraryCard(libInstance, deckInstances, comboMap, mode, params, fusionBuff, 1, globalLcwc, globalSv);
     if (scores[0] > 0) {
       suggestions.push({ cardId: lib.cardId, name: lib.card.name, rarity: lib.card.rarity, level: lib.level, fused: lib.fused1, gain: scores[0] });
     }

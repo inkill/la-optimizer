@@ -158,32 +158,100 @@ function genId(): string {
 }
 
 // ===== Default library seed =====
-// Mirrors the spreadsheet's default USER library (rows 12+). Every starter
-// card is level 5 and fused — including Bronze/Silver cards.
-// Cards: all Bronze (Common) + all Silver (Uncommon) + 10 specific Gold (Rare)
-// cards. The 10 Gold starter cards are listed below.
-const DEFAULT_GOLD_STARTERS = [
-  'Bear', 'Science', 'Time', 'Energy', 'Wind', 'Villain',
-  'Food', 'Life', 'Space', 'Monster',
+// Mirrors the spreadsheet's default USER library (68 entries with quantities).
+// Each entry: { name, level, fused, qty }
+const EXCEL_LIBRARY: Array<{ name: string; level: number; fused: boolean; qty: number }> = [
+  { name: 'Bear', level: 5, fused: true, qty: 1 },
+  { name: 'Science', level: 5, fused: true, qty: 1 },
+  { name: 'Time', level: 5, fused: true, qty: 1 },
+  { name: 'Energy', level: 5, fused: true, qty: 1 },
+  { name: 'Wind', level: 5, fused: true, qty: 1 },
+  { name: 'Villain', level: 5, fused: true, qty: 1 },
+  { name: 'Food', level: 5, fused: true, qty: 1 },
+  { name: 'Life', level: 5, fused: true, qty: 1 },
+  { name: 'Space', level: 5, fused: true, qty: 1 },
+  { name: 'Monster', level: 5, fused: true, qty: 2 },
+  { name: 'Chinchilla', level: 5, fused: true, qty: 3 },
+  { name: 'Human', level: 5, fused: false, qty: 3 },
+  { name: 'Knight', level: 5, fused: true, qty: 3 },
+  { name: 'Knowledge', level: 5, fused: true, qty: 3 },
+  { name: 'Magic', level: 5, fused: true, qty: 3 },
+  { name: 'Prehistoric', level: 5, fused: true, qty: 3 },
+  { name: 'Superhero', level: 5, fused: true, qty: 3 },
+  { name: 'Sword', level: 5, fused: true, qty: 3 },
+  { name: 'Void', level: 5, fused: true, qty: 3 },
+  { name: 'Wizard', level: 5, fused: true, qty: 3 },
+  { name: 'Angel', level: 5, fused: true, qty: 3 },
+  { name: 'Ash', level: 5, fused: true, qty: 3 },
+  { name: 'Bat', level: 5, fused: true, qty: 3 },
+  { name: 'Death', level: 5, fused: true, qty: 3 },
+  { name: 'Demon', level: 5, fused: true, qty: 3 },
+  { name: 'Dragon', level: 5, fused: true, qty: 3 },
+  { name: 'Earth', level: 5, fused: true, qty: 3 },
+  { name: 'Elf', level: 5, fused: true, qty: 3 },
+  { name: 'Fairy', level: 5, fused: true, qty: 3 },
+  { name: 'Fire', level: 5, fused: true, qty: 3 },
+  { name: 'Golem', level: 5, fused: true, qty: 3 },
+  { name: 'Hammer', level: 5, fused: true, qty: 3 },
+  { name: 'Holy Water', level: 5, fused: true, qty: 3 },
+  { name: 'Horse', level: 5, fused: true, qty: 3 },
+  { name: 'Metal', level: 5, fused: true, qty: 3 },
+  { name: 'Poison', level: 5, fused: true, qty: 3 },
+  { name: 'Radiation', level: 5, fused: true, qty: 3 },
+  { name: 'Rainbow', level: 5, fused: true, qty: 3 },
+  { name: 'Snake', level: 5, fused: true, qty: 3 },
+  { name: 'Sun', level: 5, fused: true, qty: 3 },
+  { name: 'Tree', level: 5, fused: true, qty: 3 },
+  { name: 'Trident', level: 5, fused: true, qty: 3 },
+  { name: 'Undead', level: 5, fused: true, qty: 3 },
+  { name: 'Vampire', level: 5, fused: true, qty: 3 },
+  { name: 'Water', level: 5, fused: true, qty: 3 },
+  { name: 'Water Serpent', level: 5, fused: true, qty: 3 },
+  { name: 'Werewolf', level: 5, fused: true, qty: 3 },
+  { name: 'Wings', level: 5, fused: true, qty: 3 },
+  { name: 'Wolf', level: 5, fused: true, qty: 3 },
+  { name: 'Galaxy Wars', level: 5, fused: true, qty: 1 },
+  { name: 'Galaxy Wars', level: 5, fused: false, qty: 1 },
+  { name: 'Space', level: 5, fused: false, qty: 1 },
+  { name: 'Halloween', level: 5, fused: true, qty: 1 },
+  { name: 'Leader', level: 5, fused: true, qty: 1 },
+  { name: 'Relic:Onyx', level: 4, fused: false, qty: 1 },
+  { name: 'Sci-Fi:Onyx', level: 4, fused: false, qty: 1 },
+  { name: 'Space:Onyx', level: 5, fused: false, qty: 1 },
+  { name: 'Toy', level: 5, fused: true, qty: 1 },
+  { name: 'Strength', level: 5, fused: true, qty: 1 },
+  { name: 'Turtle', level: 5, fused: false, qty: 1 },
+  { name: 'Weapon', level: 5, fused: true, qty: 1 },
+  { name: 'Rodent', level: 5, fused: false, qty: 1 },
+  { name: 'Pirate', level: 5, fused: true, qty: 2 },
+  { name: 'Music', level: 5, fused: false, qty: 1 },
+  { name: 'Speed:Onyx', level: 5, fused: false, qty: 1 },
+  { name: 'Apocalypse:Onyx', level: 5, fused: false, qty: 1 },
+  { name: 'Atomic Aftermath', level: 5, fused: true, qty: 2 },
+  { name: 'Pocket Pet', level: 5, fused: true, qty: 1 },
 ];
 
 async function seedDefaultLibrary(userId: string): Promise<void> {
   const cards = await loadCards();
-  // All Bronze + Silver cards, fused.
-  const bronzeSilver = cards.filter(
-    (c) => c.rarity === 'Bronze' || c.rarity === 'Silver'
-  );
-  // 10 specific Gold cards, fused.
-  const goldStarters = cards.filter(
-    (c) => c.rarity === 'Gold' && DEFAULT_GOLD_STARTERS.includes(c.name)
-  );
+  const nameToCard = new Map(cards.map((c) => [c.name, c]));
 
   const items: LibraryItem[] = [];
-  for (const c of bronzeSilver) {
-    items.push(makeLibraryItem(userId, c.id, 5, 1, true, false, false));
-  }
-  for (const c of goldStarters) {
-    items.push(makeLibraryItem(userId, c.id, 5, 1, true, false, false));
+  for (const entry of EXCEL_LIBRARY) {
+    const card = nameToCard.get(entry.name);
+    if (!card) continue;
+    // Handle duplicate names (e.g., Galaxy Wars fused + non-fused)
+    // by checking if we already have an item with the same cardId+fused
+    const existing = items.find(
+      (it) => it.cardId === card.id && it.fused1 === entry.fused
+    );
+    if (existing) {
+      // Merge: add quantity
+      existing.quantity += entry.qty;
+    } else {
+      items.push(makeLibraryItem(
+        userId, card.id, entry.level, entry.qty, entry.fused, false, false
+      ));
+    }
   }
   saveLibrary(userId, items);
 }
